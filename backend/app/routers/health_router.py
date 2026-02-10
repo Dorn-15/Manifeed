@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from app.schemas.health_schema import HealthRead
-from app.services.health_service import get_health_status
+from app.schemas.health import HealthRead
+from app.services.health import get_health_status
 from database import get_db_session
 
 health_router = APIRouter(prefix="/health", tags=["health"])

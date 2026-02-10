@@ -1,0 +1,162 @@
+from pathlib import Path
+from types import SimpleNamespace
+
+import app.services.rss.rss_feed_service as rss_feed_service_module
+import app.services.rss.rss_icon_service as rss_icon_service_module
+import app.services.rss.rss_sync_service as rss_sync_service_module
+from app.errors.rss import RssIconNotFoundError, RssRepositorySyncError
+from app.schemas.rss import (
+    RssFeedRead,
+    RssSourceFeedSchema,
+    RssRepositorySyncRead,
+)
+
+
+def test_rss_sync_endpoint_happy_path(
+    client,
+    mock_db_session,
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    repository_path = tmp_path / "rss_feeds"
+    repository_path.mkdir()
+    (repository_path / "Le_Monde.json").write_text("[]", encoding="utf-8")
+
+    monkeypatch.setattr(
+        rss_sync_service_module,
+        "resolve_rss_feeds_repository_path",
+        lambda: repository_path,
+    )
+    monkeypatch.setattr(
+        rss_sync_service_module,
+        "sync_rss_feeds_repository",
+        lambda repository_url, repository_path, branch: RssRepositorySyncRead(
+            action="pulled",
+            repository_path=str(repository_path),
+            commit_before="abc123",
+            commit_after="def456",
+            changed_json_files=["Le_Monde.json"],
+        ),
+    )
+    monkeypatch.setattr(
+        rss_sync_service_module,
+        "load_source_feeds_from_json",
+        lambda _: [
+            RssSourceFeedSchema(
+                url="https://example.com/rss/main",
+                title="Main",
+                tags=["tech"],
+                trust_score=0.9,
+                language="fr",
+                enabled=True,
+                img="icons/main.svg",
+                parsing_config={},
+            )
+        ],
+    )
+    monkeypatch.setattr(
+        rss_sync_service_module,
+        "get_or_create_company",
+        lambda db, company_name: (SimpleNamespace(id=1), True),
+    )
+    monkeypatch.setattr(
+        rss_sync_service_module,
+        "get_or_create_tags",
+        lambda db, tag_names: ([object()], 1),
+    )
+    monkeypatch.setattr(
+        rss_sync_service_module,
+        "upsert_feed",
+        lambda db, company, payload, tags: (object(), True),
+    )
+    monkeypatch.setattr(
+        rss_sync_service_module,
+        "delete_company_feeds_not_in_urls",
+        lambda db, company_id, expected_urls: 0,
+    )
+
+    response = client.post("/rss/sync")
+
+    assert response.status_code == 200
+    assert response.json()["repository_action"] == "pulled"
+    assert response.json()["processed_files"] == 1
+    assert response.json()["processed_feeds"] == 1
+    assert response.json()["created_feeds"] == 1
+    mock_db_session.commit.assert_called_once()
+
+
+def test_rss_sync_endpoint_repository_error_is_mapped_to_502(
+    client,
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    repository_path = tmp_path / "rss_feeds"
+    monkeypatch.setattr(
+        rss_sync_service_module,
+        "resolve_rss_feeds_repository_path",
+        lambda: repository_path,
+    )
+    monkeypatch.setattr(
+        rss_sync_service_module,
+        "sync_rss_feeds_repository",
+        lambda repository_url, repository_path, branch: (_ for _ in ()).throw(
+            RssRepositorySyncError("fetch failed")
+        ),
+    )
+
+    response = client.post("/rss/sync")
+
+    assert response.status_code == 502
+    assert response.json() == {"message": "fetch failed"}
+
+
+def test_rss_list_endpoint_happy_path(client, monkeypatch) -> None:
+    monkeypatch.setattr(
+        rss_feed_service_module,
+        "list_rss_feeds",
+        lambda db: [
+            SimpleNamespace(
+                id=1,
+                url="https://example.com/rss",
+                company=SimpleNamespace(name="The Verge"),
+                section="Main",
+                enabled=True,
+                status="unchecked",
+                trust_score=0.95,
+                language="en",
+                icon_url="theVerge/theVerge.svg",
+            )
+        ],
+    )
+
+    response = client.get("/rss/")
+
+    assert response.status_code == 200
+    assert response.json() == [
+        RssFeedRead(
+            id=1,
+            url="https://example.com/rss",
+            company_name="The Verge",
+            section="Main",
+            enabled=True,
+            status="unchecked",
+            trust_score=0.95,
+            language="en",
+            icon_url="theVerge/theVerge.svg",
+        ).model_dump()
+    ]
+
+
+def test_rss_icon_endpoint_not_found_is_mapped_to_404(client, monkeypatch) -> None:
+    monkeypatch.setattr(
+        rss_icon_service_module,
+        "resolve_rss_icon_file_path",
+        lambda repository_path, icon_url: (_ for _ in ()).throw(
+            RssIconNotFoundError("Icon not found")
+        ),
+    )
+
+    response = client.get("/rss/img/theVerge/theVerge.svg")
+
+    assert response.status_code == 404
+    assert response.json() == {"message": "Icon not found"}

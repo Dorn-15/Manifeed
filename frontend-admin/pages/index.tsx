@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 const DEFAULT_STATUS = "loading...";
@@ -22,6 +23,9 @@ export default function Home() {
     <main style={{ fontFamily: "system-ui", padding: "2rem" }}>
       <h1>Manifeed Admin</h1>
       <p>API status: {status}</p>
+      <p>
+        <Link href="/rss">Open RSS sync page</Link>
+      </p>
     </main>
   );
 }

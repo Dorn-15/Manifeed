@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 
-from app.clients.database.health_database_client import check_db_connection
-from app.schemas.health_schema import HealthRead
+from app.clients.database.health import check_db_connection
+from app.schemas.health import HealthRead
 
 
 def get_health_status(db: Session) -> HealthRead:
