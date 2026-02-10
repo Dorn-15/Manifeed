@@ -1,0 +1,84 @@
+services:
+  postgres:
+    image: postgres:15
+    container_name: manifeed_postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-manifeed}
+      POSTGRES_USER: ${POSTGRES_USER:-manifeed}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-manifeed}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-manifeed} -d ${POSTGRES_DB:-manifeed}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - manifeed_internal
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: manifeed_backend
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-manifeed}:${POSTGRES_PASSWORD:-manifeed}@postgres:5432/${POSTGRES_DB:-manifeed}
+      CORS_ORIGINS: ${CORS_ORIGINS:-*}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    volumes:
+      - ./backend:/app:z
+    networks:
+      - manifeed_internal
+      - manifeed_public
+    restart: unless-stopped
+
+  frontend_admin:
+    build:
+      context: ./frontend-admin
+      dockerfile: Dockerfile
+    container_name: manifeed_frontend_admin
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL_ADMIN:-http://localhost:8000}
+    depends_on:
+      - backend
+    ports:
+      - "${ADMIN_PORT:-3000}:3000"
+    volumes:
+      - ./frontend-admin:/app:z
+      - admin_node_modules:/app/node_modules
+    networks:
+      - manifeed_public
+    restart: unless-stopped
+
+  frontend_user:
+    build:
+      context: ./frontend-user
+      dockerfile: Dockerfile
+    container_name: manifeed_frontend_user
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL_USER:-http://localhost:8000}
+    depends_on:
+      - backend
+    ports:
+      - "${USER_PORT:-3001}:3000"
+    volumes:
+      - ./frontend-user:/app:z
+      - user_node_modules:/app/node_modules
+    networks:
+      - manifeed_public
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  admin_node_modules:
+  user_node_modules:
+
+networks:
+  manifeed_internal:
+    driver: bridge
+  manifeed_public:
+    driver: bridge
