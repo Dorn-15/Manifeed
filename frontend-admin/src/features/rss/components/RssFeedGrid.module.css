@@ -1,0 +1,22 @@
+.grid {
+  display: grid;
+  gap: 0.85rem;
+  grid-template-columns: repeat(auto-fill, minmax(265px, 1fr));
+}
+
+.emptyState {
+  border: 1px solid var(--glass-border);
+  background: rgba(125, 157, 255, 0.08);
+  border-radius: 14px;
+  padding: 1rem;
+}
+
+.emptyState h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.emptyState p {
+  margin: 0.4rem 0 0;
+  color: var(--text-muted);
+}

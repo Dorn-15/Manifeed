@@ -23,10 +23,14 @@ Commercial hosting or closed-source usage requires a commercial license.
 
 **Current endpoints**
 - `GET /health/` returns `{status, database}`
+- `GET /rss/` returns RSS feeds list
+- `POST /rss/sync` syncs RSS catalog from git repository
+- `GET /rss/img/{icon_url:path}` serves SVG icons from local RSS repository
 
 **Frontend**
 - Both frontends are now React + TypeScript (Next.js).
-- Minimal pages call `/health` and show API status.
+- Admin UI consumes `/health`, `/rss`, `/rss/sync` and RSS icons endpoints.
+- User UI currently uses `/health`.
 
 ## Run
 
@@ -75,6 +79,11 @@ Optional variables (Compose):
 - `NEXT_PUBLIC_API_URL_ADMIN`
 - `NEXT_PUBLIC_API_URL_USER`
 - `BACKEND_PORT`, `ADMIN_PORT`, `USER_PORT`
+
+Backend runtime variables (add them to backend service env if needed):
+- `RSS_FEEDS_REPOSITORY_URL` (default `https://github.com/Dorn-15/rss_feeds`)
+- `RSS_FEEDS_REPOSITORY_BRANCH` (default `main`)
+- `RSS_FEEDS_REPOSITORY_PATH` (default `/tmp/rss_feeds`)
 
 ## Notes
 

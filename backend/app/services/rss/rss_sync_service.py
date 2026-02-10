@@ -22,7 +22,7 @@ from app.domain.rss import (
     normalize_source_feed_entry,
 )
 from app.errors.rss import RssCatalogParseError
-from app.schemas.rss_sync_schema import RssRepositorySyncRead, RssSyncRead
+from app.schemas.rss import RssRepositorySyncRead, RssSyncRead
 from app.utils import (
     get_rss_feeds_repository_branch,
     get_rss_feeds_repository_url,

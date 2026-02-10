@@ -5,8 +5,8 @@ from app.schemas.health import HealthRead
 
 
 def get_health_status(db: Session) -> HealthRead:
-    database_ok = check_db_connection(db)
-    return HealthRead(
-        status="ok" if database_ok else "degraded",
-        database="ok" if database_ok else "unavailable",
-    )
+    database_ok = check_db_connection(db)    
+    if not database_ok:
+        return HealthRead(status="degraded", database="unavailable")
+    
+    return HealthRead(status="ok", database="ok")

@@ -1,0 +1,118 @@
+.toolbar {
+  border: 1px solid var(--glass-border);
+  background: var(--glass-strong);
+  border-radius: 18px;
+  padding: 0.95rem;
+  display: grid;
+  gap: 0.8rem;
+  box-shadow: var(--shadow-soft);
+}
+
+.filterField {
+  display: grid;
+  gap: 0.42rem;
+}
+
+.filterField label {
+  color: var(--text-soft);
+  font-size: 0.84rem;
+}
+
+.filterField input {
+  border: 1px solid var(--glass-border-strong);
+  background: rgba(125, 157, 255, 0.09);
+  color: var(--text-main);
+  border-radius: 11px;
+  padding: 0.56rem 0.7rem;
+  outline: none;
+}
+
+.filterField input::placeholder {
+  color: #9aaad1;
+}
+
+.filterField input:focus,
+.inlineFields select:focus {
+  border-color: var(--accent-soft);
+  box-shadow: 0 0 0 2px rgba(125, 157, 255, 0.28);
+}
+
+.filterRow {
+  display: grid;
+  gap: 0.7rem;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+}
+
+.filterGroup {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.filterLabel {
+  color: var(--text-soft);
+  font-size: 0.84rem;
+}
+
+.filterButtons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.48rem;
+}
+
+.filterButton {
+  border: 1px solid var(--glass-border-strong);
+  background: rgba(255, 255, 255, 0.06);
+  color: #e8efff;
+  border-radius: 999px;
+  padding: 0.25rem 0.7rem;
+  cursor: pointer;
+  text-transform: capitalize;
+  font-size: 0.8rem;
+}
+
+.filterButtonActive {
+  border-color: rgba(125, 157, 255, 0.74);
+  background: rgba(125, 157, 255, 0.22);
+}
+
+.inlineFields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  justify-content: flex-end;
+}
+
+.inlineFields label {
+  display: grid;
+  gap: 0.35rem;
+  color: var(--text-soft);
+  font-size: 0.84rem;
+  min-width: 155px;
+}
+
+.inlineFields select {
+  border: 1px solid var(--glass-border-strong);
+  background: rgba(125, 157, 255, 0.1);
+  color: var(--text-main);
+  border-radius: 10px;
+  padding: 0.42rem 0.58rem;
+  outline: none;
+}
+
+@media (max-width: 960px) {
+  .filterRow {
+    grid-template-columns: 1fr;
+  }
+
+  .inlineFields {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 720px) {
+  .inlineFields label {
+    width: 100%;
+    min-width: 0;
+  }
+}

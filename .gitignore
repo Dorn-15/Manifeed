@@ -14,6 +14,9 @@
 /.next/
 /frontend-admin/.next/
 /frontend-user/.next/
+/frontend-admin/.next_root/
+/frontend-user/.next_root/
+/frontend-user/.next_failed/
 /out/
 
 # production
