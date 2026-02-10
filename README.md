@@ -15,6 +15,7 @@ Commercial hosting or closed-source usage requires a commercial license.
 **Backend architecture (FastAPI reference layout)**
 - `backend/main.py`: FastAPI app + CORS
 - `backend/database.py`: SQLAlchemy engine/session
+- `backend/alembic`: Alembic migrations
 - `backend/app/routers`: thin routers
 - `backend/app/services`: orchestration layer
 - `backend/app/clients/database`: DB boundaries
@@ -55,10 +56,16 @@ Global:
 - `make logs`
 - `make clean`
 - `make clean-all`
+- `make db-migrate`
+- `make db-reset`
 
 Per service:
 - `make up SERVICE=backend`
 - `make logs SERVICE=postgres`
+
+Database:
+- `make db-migrate` runs `alembic upgrade head` inside the backend container.
+- `make db-reset` downgrades to `base` then upgrades to `head` (drops all tables managed by migrations).
 
 ## Environment
 
@@ -73,3 +80,7 @@ Optional variables (Compose):
 
 - DB is not exposed to host by default (no `5432:5432`).
 - If you need host access: add `ports: - "5432:5432"` under `postgres`.
+
+## Docs
+
+Per-service notes live in `doc/` (one folder per Docker service).
