@@ -4,9 +4,16 @@
 
 ```mermaid
 erDiagram
-    rss_company ||--o{ rss_feeds : "company_id (SET NULL)"
-    rss_feeds ||--o{ rss_feed_tags : "feed_id (CASCADE)"
-    rss_tags ||--o{ rss_feed_tags : "tag_id (CASCADE)"
+    rss_company ||--o{ rss_feeds : company_id
+    rss_feeds ||--o{ rss_feed_tags : feed_id
+    rss_tags ||--o{ rss_feed_tags : tag_id
+```
+
+## Graph (ASCII)
+
+```text
+rss_company (1) ---- (0..n) rss_feeds
+rss_feeds   (1) ---- (0..n) rss_feed_tags (n..0) ---- (1) rss_tags
 ```
 
 ## Relation Notes
