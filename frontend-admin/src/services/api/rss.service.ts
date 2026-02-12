@@ -1,5 +1,5 @@
 import { apiRequest, getApiBaseUrl } from "@/services/api/client";
-import type { RssFeed, RssSyncRead } from "@/types/rss";
+import type { RssCompany, RssFeed, RssSyncRead } from "@/types/rss";
 
 function encodeIconPath(iconUrl: string): string {
   return iconUrl
@@ -29,5 +29,22 @@ export async function listRssFeeds(): Promise<RssFeed[]> {
 export async function syncRssFeeds(): Promise<RssSyncRead> {
   return apiRequest<RssSyncRead>("/rss/sync", {
     method: "POST",
+  });
+}
+
+export async function updateRssFeedEnabled(feedId: number, enabled: boolean): Promise<RssFeed> {
+  return apiRequest<RssFeed>(`/rss/feeds/${feedId}/enabled`, {
+    method: "PATCH",
+    body: JSON.stringify({ enabled }),
+  });
+}
+
+export async function updateRssCompanyEnabled(
+  companyId: number,
+  enabled: boolean,
+): Promise<RssCompany> {
+  return apiRequest<RssCompany>(`/rss/companies/${companyId}/enabled`, {
+    method: "PATCH",
+    body: JSON.stringify({ enabled }),
   });
 }

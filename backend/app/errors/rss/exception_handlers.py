@@ -4,6 +4,9 @@ from starlette import status
 
 from .custom_exceptions import (
     RssCatalogParseError,
+    RssCompanyNotFoundError,
+    RssFeedNotFoundError,
+    RssFeedToggleForbiddenError,
     RssIconNotFoundError,
     RssRepositorySyncError,
 )
@@ -35,5 +38,35 @@ def rss_icon_not_found_error_handler(
 ) -> JSONResponse:
     return JSONResponse(
         status_code=status.HTTP_404_NOT_FOUND,
+        content={"message": str(exception)},
+    )
+
+
+def rss_feed_not_found_error_handler(
+    _: Request,
+    exception: RssFeedNotFoundError,
+) -> JSONResponse:
+    return JSONResponse(
+        status_code=status.HTTP_404_NOT_FOUND,
+        content={"message": str(exception)},
+    )
+
+
+def rss_company_not_found_error_handler(
+    _: Request,
+    exception: RssCompanyNotFoundError,
+) -> JSONResponse:
+    return JSONResponse(
+        status_code=status.HTTP_404_NOT_FOUND,
+        content={"message": str(exception)},
+    )
+
+
+def rss_feed_toggle_forbidden_error_handler(
+    _: Request,
+    exception: RssFeedToggleForbiddenError,
+) -> JSONResponse:
+    return JSONResponse(
+        status_code=status.HTTP_409_CONFLICT,
         content={"message": str(exception)},
     )

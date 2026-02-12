@@ -18,7 +18,7 @@ def get_or_create_company(db: Session, company_name: str) -> tuple[RssCompany, b
     if existing_company is not None:
         return existing_company, False
 
-    new_company = RssCompany(name=company_name)
+    new_company = RssCompany(name=company_name, enabled=True)
     db.add(new_company)
     db.flush()
     return new_company, True

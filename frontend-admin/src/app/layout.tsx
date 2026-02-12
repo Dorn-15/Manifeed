@@ -2,6 +2,8 @@ import { Manrope } from "next/font/google";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
+import { AdminNavbar } from "@/features/navigation/components/AdminNavbar";
+
 import "./globals.css";
 
 const bodyFont = Manrope({
@@ -22,7 +24,10 @@ type RootLayoutProps = {
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="en">
-      <body className={bodyFont.variable}>{children}</body>
+      <body className={bodyFont.variable}>
+        <AdminNavbar />
+        {children}
+      </body>
     </html>
   );
 }

@@ -1,0 +1,48 @@
+.toggle {
+  --toggle-height: 1.4rem;
+  --toggle-padding: 0.25rem;
+  --thumb-size: calc(var(--toggle-height) - (2 * var(--toggle-padding)));
+  width: calc(2 * var(--toggle-height) - var(--toggle-padding));
+  height: var(--toggle-height);
+  margin: 0;
+  padding: var(--toggle-padding);
+  box-sizing: border-box;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  cursor: pointer;
+  transition: border-color 0.18s ease, background-color 0.18s ease, opacity 0.18s ease;
+}
+
+.thumb {
+  width: var(--thumb-size);
+  height: var(--thumb-size);
+  border-radius: 999px;
+  background: #f7f9ff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+  transform: translateX(0);
+  transition: transform 0.18s ease;
+}
+
+.enabled {
+  color: var(--accent-soft);
+  background: rgba(125, 157, 255, 0.15);
+  border-color: rgba(125, 157, 255, 0.44);
+}
+
+.enabled .thumb {
+  transform: translateX(calc(var(--toggle-height) - (1.5 * var(--toggle-padding))));
+}
+
+.disabled {
+  color: #ffd8bb;
+  background: rgba(255, 159, 74, 0.14);
+  border-color: rgba(255, 159, 74, 0.5);
+}
+
+.toggle:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

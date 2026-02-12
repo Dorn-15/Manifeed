@@ -1,4 +1,5 @@
 import type { RssFeed } from "@/types/rss";
+import { EnabledToggle } from "@/components/ui";
 
 import { RssFeedGrid } from "./RssFeedGrid";
 import styles from "./FeedPanel.module.css";
@@ -6,11 +7,30 @@ import styles from "./FeedPanel.module.css";
 type FeedPanelProps = {
   feeds: RssFeed[];
   feedsError: string | null;
+  toggleError: string | null;
   loadingFeeds: boolean;
-  selectedCompanyName: string | null;
+  selectedCompanyName: string;
+  selectedCompanyId: number | null;
+  selectedCompanyEnabled: boolean;
+  companyToggling: boolean;
+  togglingFeedIds: Set<number>;
+  onToggleFeedEnabled: (feedId: number, nextEnabled: boolean) => void | Promise<void>;
+  onToggleCompanyEnabled: (companyId: number, nextEnabled: boolean) => void | Promise<void>;
 };
 
-export function FeedPanel({ feeds, feedsError, loadingFeeds, selectedCompanyName }: FeedPanelProps) {
+export function FeedPanel({
+  feeds,
+  feedsError,
+  toggleError,
+  loadingFeeds,
+  selectedCompanyName,
+  selectedCompanyId,
+  selectedCompanyEnabled,
+  companyToggling,
+  togglingFeedIds,
+  onToggleFeedEnabled,
+  onToggleCompanyEnabled,
+}: FeedPanelProps) {
   if (feedsError) {
     return (
       <section className={styles.panel}>
@@ -27,7 +47,7 @@ export function FeedPanel({ feeds, feedsError, loadingFeeds, selectedCompanyName
     );
   }
 
-  if (selectedCompanyName === null) {
+  if (!selectedCompanyName) {
     return (
       <section className={styles.panel}>
         <section className={styles.emptyState}>
@@ -41,10 +61,27 @@ export function FeedPanel({ feeds, feedsError, loadingFeeds, selectedCompanyName
   return (
     <section className={styles.panel}>
       <header className={styles.header}>
-        <h2>{selectedCompanyName}</h2>
-        <p>{feeds.length} matching feeds</p>
+        <div>
+          <h2>{selectedCompanyName}</h2>
+          <p>{feeds.length} feeds</p>
+        </div>
+        {selectedCompanyId !== null ? (
+          <EnabledToggle
+            enabled={selectedCompanyEnabled}
+            loading={companyToggling}
+            ariaLabel={`Toggle company ${selectedCompanyName}`}
+            onChange={(nextEnabled) => onToggleCompanyEnabled(selectedCompanyId, nextEnabled)}
+          />
+        ) : null}
       </header>
-      <RssFeedGrid feeds={feeds} />
+
+      {toggleError ? <p className={styles.errorText}>Toggle error: {toggleError}</p> : null}
+
+      <RssFeedGrid
+        feeds={feeds}
+        togglingFeedIds={togglingFeedIds}
+        onToggleFeedEnabled={onToggleFeedEnabled}
+      />
     </section>
   );
 }

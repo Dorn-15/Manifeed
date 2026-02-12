@@ -1,6 +1,6 @@
 from pathlib import Path
 
-import app.services.rss_icon_service as rss_icon_service_module
+import app.services.rss.rss_icon_service as rss_icon_service_module
 
 
 def test_get_rss_icon_file_path_resolves_from_repository(monkeypatch, tmp_path: Path) -> None:

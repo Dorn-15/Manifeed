@@ -38,30 +38,6 @@
   color: var(--text-muted);
 }
 
-.heroActions {
-  margin-top: 1.4rem;
-  display: flex;
-  align-items: center;
-  gap: 0.9rem;
-  flex-wrap: wrap;
-}
-
-.primaryAction {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 12px;
-  padding: 0.58rem 1rem;
-  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-soft) 100%);
-  color: #081026;
-  font-weight: 700;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-}
-
-.primaryAction:hover {
-  filter: brightness(1.05);
-}
-
 .panelGrid {
   display: grid;
   gap: 1rem;

@@ -1,7 +1,6 @@
 "use client";
 
-import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { CompanyCard } from "@/features/rss/components/CompanyCard";
 import { FeedPanel } from "@/features/rss/components/FeedPanel";
@@ -10,16 +9,32 @@ import {
   type EnabledFilter,
   type SortMode,
 } from "@/features/rss/components/FeedToolbar";
+import { PopInfo, type PopInfoType } from "@/components/ui";
 import { RssSyncPanel } from "@/features/rss/components/RssSyncPanel";
-import { listRssFeeds, syncRssFeeds } from "@/services/api/rss.service";
+import {
+  listRssFeeds,
+  syncRssFeeds,
+  updateRssCompanyEnabled,
+  updateRssFeedEnabled,
+} from "@/services/api/rss.service";
 import type { RssFeed, RssSyncRead } from "@/types/rss";
 
 import styles from "./page.module.css";
 
 type CompanyGroup = {
+  key: string;
+  id: number | null;
   slug: string;
   name: string;
+  enabled: boolean;
   feeds: RssFeed[];
+};
+
+type PopInfoState = {
+  id: number;
+  title: string;
+  text: string;
+  type: PopInfoType;
 };
 
 function normalizeCompanyName(companyName: string | null): string {
@@ -44,6 +59,14 @@ function normalizeCompanySlug(companyName: string): string {
   return `${cleaned[0].toLowerCase()}${cleaned.slice(1)}`;
 }
 
+function buildCompanyGroupKey(feed: RssFeed, slug: string): string {
+  if (feed.company_id !== null) {
+    return `company:${feed.company_id}`;
+  }
+
+  return `fallback:${slug}`;
+}
+
 function sortFeeds(feeds: RssFeed[], sortMode: SortMode): RssFeed[] {
   const nextFeeds = [...feeds];
 
@@ -66,13 +89,23 @@ function sortFeeds(feeds: RssFeed[], sortMode: SortMode): RssFeed[] {
   return nextFeeds;
 }
 
+function formatSyncSummary(syncResult: RssSyncRead): string {
+  return [
+    `action=${syncResult.repository_action}`,
+    `files=${syncResult.processed_files}`,
+    `processed=${syncResult.processed_feeds}`,
+    `created=${syncResult.created_feeds}`,
+    `updated=${syncResult.updated_feeds}`,
+    `deleted=${syncResult.deleted_feeds}`,
+  ].join(" | ");
+}
+
 export default function AdminRssPage() {
   const [feeds, setFeeds] = useState<RssFeed[]>([]);
   const [loadingFeeds, setLoadingFeeds] = useState<boolean>(true);
   const [feedsError, setFeedsError] = useState<string | null>(null);
   const [syncing, setSyncing] = useState<boolean>(false);
-  const [syncError, setSyncError] = useState<string | null>(null);
-  const [syncResult, setSyncResult] = useState<RssSyncRead | null>(null);
+  const [popInfo, setPopInfo] = useState<PopInfoState | null>(null);
   const [lastRefreshAt, setLastRefreshAt] = useState<string | null>(null);
 
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -80,14 +113,16 @@ export default function AdminRssPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sortMode, setSortMode] = useState<SortMode>("trust_desc");
 
-  const [selectedCompanySlug, setSelectedCompanySlug] = useState<string | null>(null);
-  const companyRailRef = useRef<HTMLDivElement | null>(null);
-  const [canScrollCompanyLeft, setCanScrollCompanyLeft] = useState(false);
-  const [canScrollCompanyRight, setCanScrollCompanyRight] = useState(false);
+  const [toggleError, setToggleError] = useState<string | null>(null);
+  const [togglingFeedIds, setTogglingFeedIds] = useState<Set<number>>(new Set());
+  const [togglingCompanyId, setTogglingCompanyId] = useState<number | null>(null);
+
+  const [selectedCompanyKey, setSelectedCompanyKey] = useState<string | null>(null);
 
   const loadFeeds = useCallback(async () => {
     setLoadingFeeds(true);
     setFeedsError(null);
+    setToggleError(null);
 
     try {
       const payload = await listRssFeeds();
@@ -106,43 +141,109 @@ export default function AdminRssPage() {
     void loadFeeds();
   }, [loadFeeds]);
 
+  const closePopInfo = useCallback(() => {
+    setPopInfo(null);
+  }, []);
+
+  const showPopInfo = useCallback((title: string, text: string, type: PopInfoType) => {
+    setPopInfo((current) => ({
+      id: (current?.id ?? 0) + 1,
+      title,
+      text,
+      type,
+    }));
+  }, []);
+
   const handleSync = useCallback(async () => {
     setSyncing(true);
-    setSyncError(null);
 
     try {
       const payload = await syncRssFeeds();
-      setSyncResult(payload);
+      showPopInfo("Last sync result", formatSyncSummary(payload), "info");
       await loadFeeds();
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unexpected error during sync";
-      setSyncError(message);
+      showPopInfo("Sync error", message, "alert");
     } finally {
       setSyncing(false);
     }
-  }, [loadFeeds]);
+  }, [loadFeeds, showPopInfo]);
+
+  const handleFeedEnabledToggle = useCallback(async (feedId: number, nextEnabled: boolean) => {
+    setToggleError(null);
+    setTogglingFeedIds((currentIds) => {
+      const nextIds = new Set(currentIds);
+      nextIds.add(feedId);
+      return nextIds;
+    });
+
+    try {
+      const updatedFeed = await updateRssFeedEnabled(feedId, nextEnabled);
+      setFeeds((currentFeeds) =>
+        currentFeeds.map((feed) => (feed.id === feedId ? updatedFeed : feed)),
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to toggle feed";
+      setToggleError(message);
+    } finally {
+      setTogglingFeedIds((currentIds) => {
+        const nextIds = new Set(currentIds);
+        nextIds.delete(feedId);
+        return nextIds;
+      });
+    }
+  }, []);
+
+  const handleCompanyEnabledToggle = useCallback(
+    async (companyId: number, nextEnabled: boolean) => {
+      setToggleError(null);
+      setTogglingCompanyId(companyId);
+
+      try {
+        const updatedCompany = await updateRssCompanyEnabled(companyId, nextEnabled);
+        setFeeds((currentFeeds) =>
+          currentFeeds.map((feed) =>
+            feed.company_id === updatedCompany.id
+              ? { ...feed, company_enabled: updatedCompany.enabled }
+              : feed,
+          ),
+        );
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Unable to toggle company";
+        setToggleError(message);
+      } finally {
+        setTogglingCompanyId(null);
+      }
+    },
+    [],
+  );
 
   const companyGroups = useMemo(() => {
-    const groupedBySlug = new Map<string, CompanyGroup>();
+    const groupedByKey = new Map<string, CompanyGroup>();
 
     for (const feed of feeds) {
       const companyName = normalizeCompanyName(feed.company_name);
       const companySlug = normalizeCompanySlug(companyName);
-      const currentGroup = groupedBySlug.get(companySlug);
+      const groupKey = buildCompanyGroupKey(feed, companySlug);
+      const currentGroup = groupedByKey.get(groupKey);
 
       if (currentGroup) {
         currentGroup.feeds.push(feed);
+        currentGroup.enabled = currentGroup.enabled && (feed.company_enabled ?? true);
         continue;
       }
 
-      groupedBySlug.set(companySlug, {
+      groupedByKey.set(groupKey, {
+        key: groupKey,
+        id: feed.company_id,
         slug: companySlug,
         name: companyName,
+        enabled: feed.company_enabled ?? true,
         feeds: [feed],
       });
     }
 
-    const groups = Array.from(groupedBySlug.values());
+    const groups = Array.from(groupedByKey.values());
     groups.sort((left, right) => {
       if (right.feeds.length !== left.feeds.length) {
         return right.feeds.length - left.feeds.length;
@@ -156,19 +257,19 @@ export default function AdminRssPage() {
 
   useEffect(() => {
     if (companyGroups.length === 0) {
-      setSelectedCompanySlug(null);
+      setSelectedCompanyKey(null);
       return;
     }
 
-    const selectionStillExists = companyGroups.some((group) => group.slug === selectedCompanySlug);
+    const selectionStillExists = companyGroups.some((group) => group.key === selectedCompanyKey);
     if (!selectionStillExists) {
-      setSelectedCompanySlug(companyGroups[0].slug);
+      setSelectedCompanyKey(companyGroups[0].key);
     }
-  }, [companyGroups, selectedCompanySlug]);
+  }, [companyGroups, selectedCompanyKey]);
 
   const selectedCompany = useMemo(
-    () => companyGroups.find((group) => group.slug === selectedCompanySlug) ?? null,
-    [companyGroups, selectedCompanySlug],
+    () => companyGroups.find((group) => group.key === selectedCompanyKey) ?? null,
+    [companyGroups, selectedCompanyKey],
   );
 
   const statusOptions = useMemo(() => {
@@ -215,59 +316,14 @@ export default function AdminRssPage() {
     return sortFeeds(nextFeeds, sortMode);
   }, [enabledFilter, searchQuery, selectedCompany, sortMode, statusFilter]);
 
-  const updateCompanyRailScrollState = useCallback(() => {
-    const rail = companyRailRef.current;
-    if (!rail) {
-      setCanScrollCompanyLeft(false);
-      setCanScrollCompanyRight(false);
-      return;
-    }
-
-    const remainingScroll = rail.scrollWidth - rail.clientWidth - rail.scrollLeft;
-    setCanScrollCompanyLeft(rail.scrollLeft > 8);
-    setCanScrollCompanyRight(remainingScroll > 8);
-  }, []);
-
-  useEffect(() => {
-    const rail = companyRailRef.current;
-    if (!rail) {
-      return;
-    }
-
-    updateCompanyRailScrollState();
-    rail.addEventListener("scroll", updateCompanyRailScrollState, { passive: true });
-    window.addEventListener("resize", updateCompanyRailScrollState);
-
-    return () => {
-      rail.removeEventListener("scroll", updateCompanyRailScrollState);
-      window.removeEventListener("resize", updateCompanyRailScrollState);
-    };
-  }, [companyGroups.length, updateCompanyRailScrollState]);
-
-  const scrollCompanies = useCallback((direction: "left" | "right") => {
-    const rail = companyRailRef.current;
-    if (!rail) {
-      return;
-    }
-
-    const step = Math.max(rail.clientWidth * 0.75, 260);
-    rail.scrollBy({
-      left: direction === "left" ? -step : step,
-      behavior: "smooth",
-    });
-  }, []);
-
   return (
     <main className={styles.main}>
       <header className={styles.header}>
         <div>
           <p className={styles.kicker}>Manifeed Admin</p>
           <h1>RSS Company Workspace</h1>
-          <p>Select a company above, then inspect its feeds below.</p>
+          <p>Select a company in the left panel, then inspect its feeds.</p>
         </div>
-        <Link className={styles.backLink} href="/">
-          Back to dashboard
-        </Link>
       </header>
 
       <RssSyncPanel
@@ -279,78 +335,59 @@ export default function AdminRssPage() {
         onRefresh={loadFeeds}
       />
 
-      {syncError ? <p className={styles.errorText}>Sync error: {syncError}</p> : null}
-      {syncResult ? (
-        <section className={styles.syncSummaryCard}>
-          <h2>Last sync result</h2>
-          <p>
-            action={syncResult.repository_action} | files={syncResult.processed_files} |
-            processed={syncResult.processed_feeds} | created={syncResult.created_feeds} |
-            updated={syncResult.updated_feeds} | deleted={syncResult.deleted_feeds}
-          </p>
-        </section>
+      {popInfo ? (
+        <PopInfo
+          key={popInfo.id}
+          title={popInfo.title}
+          text={popInfo.text}
+          type={popInfo.type}
+          onClose={closePopInfo}
+        />
       ) : null}
 
       <section className={styles.workspace}>
-        <section className={styles.companyPanel}>
-          <div className={styles.companyPanelHeader}>
-            <h2>Companies</h2>
-            <p>{companyGroups.length} company cards</p>
+        <aside className={styles.companyPanel}>
+          <div className={styles.companyRail}>
+            {companyGroups.map((company) => (
+              <CompanyCard
+                key={company.key}
+                className={styles.companyCardItem}
+                companyName={company.name}
+                companySlug={company.slug}
+                isSelected={company.key === selectedCompanyKey}
+                onSelect={() => setSelectedCompanyKey(company.key)}
+              />
+            ))}
           </div>
+        </aside>
 
-          <div className={styles.companyRailWrap}>
-            <button
-              className={styles.companyScrollButton}
-              type="button"
-              onClick={() => scrollCompanies("left")}
-              disabled={!canScrollCompanyLeft}
-              aria-label="Scroll companies to the left"
-            >
-              {"<"}
-            </button>
-            <div className={styles.companyRail} ref={companyRailRef}>
-              {companyGroups.map((company) => (
-                <CompanyCard
-                  key={company.slug}
-                  className={styles.companyCardItem}
-                  companyName={company.name}
-                  companySlug={company.slug}
-                  feedCount={company.feeds.length}
-                  isSelected={company.slug === selectedCompanySlug}
-                  onSelect={() => setSelectedCompanySlug(company.slug)}
-                />
-              ))}
-            </div>
-            <button
-              className={styles.companyScrollButton}
-              type="button"
-              onClick={() => scrollCompanies("right")}
-              disabled={!canScrollCompanyRight}
-              aria-label="Scroll companies to the right"
-            >
-              {">"}
-            </button>
-          </div>
-        </section>
+        <div className={styles.workspaceContent}>
+          <FeedToolbar
+            searchQuery={searchQuery}
+            enabledFilter={enabledFilter}
+            statusFilter={statusFilter}
+            sortMode={sortMode}
+            statusOptions={statusOptions}
+            onSearchQueryChange={setSearchQuery}
+            onEnabledFilterChange={setEnabledFilter}
+            onStatusFilterChange={setStatusFilter}
+            onSortModeChange={setSortMode}
+          />
 
-        <FeedToolbar
-          searchQuery={searchQuery}
-          enabledFilter={enabledFilter}
-          statusFilter={statusFilter}
-          sortMode={sortMode}
-          statusOptions={statusOptions}
-          onSearchQueryChange={setSearchQuery}
-          onEnabledFilterChange={setEnabledFilter}
-          onStatusFilterChange={setStatusFilter}
-          onSortModeChange={setSortMode}
-        />
-
-        <FeedPanel
-          feeds={filteredSelectedFeeds}
-          feedsError={feedsError}
-          loadingFeeds={loadingFeeds}
-          selectedCompanyName={selectedCompany?.name ?? null}
-        />
+          <FeedPanel
+            feeds={filteredSelectedFeeds}
+            feedsError={feedsError}
+            toggleError={toggleError}
+            loadingFeeds={loadingFeeds}
+            selectedCompanyName={selectedCompany?.name ?? ""}
+            selectedCompanyId={selectedCompany?.id ?? null}
+            selectedCompanyEnabled={selectedCompany?.enabled ?? true}
+            companyToggling={selectedCompany?.id === togglingCompanyId}
+            togglingFeedIds={togglingFeedIds}
+            onToggleFeedEnabled={handleFeedEnabledToggle}
+            onToggleCompanyEnabled={handleCompanyEnabledToggle}
+          />
+        </div>
       </section>
     </main>
   );

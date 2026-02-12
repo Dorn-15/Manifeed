@@ -1,10 +1,13 @@
 import { buildRssIconUrl } from "@/services/api/rss.service";
 import type { RssFeed } from "@/types/rss";
+import { EnabledToggle } from "@/components/ui";
 
 import styles from "./FeedCard.module.css";
 
 type FeedCardProps = {
   feed: RssFeed;
+  toggling: boolean;
+  onToggleEnabled: (feedId: number, nextEnabled: boolean) => void | Promise<void>;
 };
 
 function getTrustPercent(trustScore: number): number {
@@ -15,12 +18,13 @@ function getTrustPercent(trustScore: number): number {
   return Math.round(Math.max(0, Math.min(100, trustScore)));
 }
 
-export function FeedCard({ feed }: FeedCardProps) {
+export function FeedCard({ feed, toggling, onToggleEnabled }: FeedCardProps) {
   const iconUrl = buildRssIconUrl(feed.icon_url);
   const trustPercent = getTrustPercent(feed.trust_score);
   const companyName = feed.company_name ?? "Unknown company";
   const section = feed.section ?? "No section";
   const language = feed.language ?? "n/a";
+  const companyDisabled = feed.company_enabled === false;
 
   return (
     <article className={styles.card}>
@@ -30,8 +34,6 @@ export function FeedCard({ feed }: FeedCardProps) {
             <img
               src={iconUrl}
               alt={companyName}
-              width={34}
-              height={34}
               loading="lazy"
               decoding="async"
             />
@@ -39,20 +41,23 @@ export function FeedCard({ feed }: FeedCardProps) {
             <span className={styles.iconFallback}>{companyName.slice(0, 1)}</span>
           )}
         </div>
-        <div>
-          <h3>{companyName}</h3>
-          <p>{section}</p>
+        <div className={styles.sectionInfo}>
+          <h3>{section}</h3>
+          <div className={styles.metaRow}>
+            <span className={styles.languagePill}>{language}</span>
+            <span className={styles.statusPill}>{feed.status}</span>
+          </div>
+        </div>
+        <div className={styles.controls}>
+          <EnabledToggle
+            enabled={feed.enabled}
+            loading={toggling}
+            disabled={companyDisabled}
+            ariaLabel={`Toggle ${feed.url}`}
+            onChange={(nextEnabled) => onToggleEnabled(feed.id, nextEnabled)}
+          />
         </div>
       </div>
-
-      <div className={styles.metaRow}>
-        <span className={feed.enabled ? styles.enabledPill : styles.disabledPill}>
-          {feed.enabled ? "enabled" : "disabled"}
-        </span>
-        <span className={styles.statusPill}>{feed.status}</span>
-        <span className={styles.languagePill}>{language}</span>
-      </div>
-
       <div className={styles.trustBlock}>
         <div className={styles.trustHeader}>
           <span>Trust score</span>

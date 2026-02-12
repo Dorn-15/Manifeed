@@ -4,8 +4,13 @@ from types import SimpleNamespace
 import app.services.rss.rss_feed_service as rss_feed_service_module
 import app.services.rss.rss_icon_service as rss_icon_service_module
 import app.services.rss.rss_sync_service as rss_sync_service_module
-from app.errors.rss import RssIconNotFoundError, RssRepositorySyncError
+import app.services.rss.rss_toggle_service as rss_toggle_service_module
+from app.errors.rss import (
+    RssIconNotFoundError,
+    RssRepositorySyncError,
+)
 from app.schemas.rss import (
+    RssCompanyRead,
     RssFeedRead,
     RssSourceFeedSchema,
     RssRepositorySyncRead,
@@ -118,7 +123,7 @@ def test_rss_list_endpoint_happy_path(client, monkeypatch) -> None:
             SimpleNamespace(
                 id=1,
                 url="https://example.com/rss",
-                company=SimpleNamespace(name="The Verge"),
+                company=SimpleNamespace(id=10, name="The Verge", enabled=True),
                 section="Main",
                 enabled=True,
                 status="unchecked",
@@ -136,7 +141,9 @@ def test_rss_list_endpoint_happy_path(client, monkeypatch) -> None:
         RssFeedRead(
             id=1,
             url="https://example.com/rss",
+            company_id=10,
             company_name="The Verge",
+            company_enabled=True,
             section="Main",
             enabled=True,
             status="unchecked",
@@ -160,3 +167,89 @@ def test_rss_icon_endpoint_not_found_is_mapped_to_404(client, monkeypatch) -> No
 
     assert response.status_code == 404
     assert response.json() == {"message": "Icon not found"}
+
+
+def test_rss_toggle_feed_endpoint_happy_path(client, monkeypatch) -> None:
+    monkeypatch.setattr(
+        rss_toggle_service_module,
+        "get_rss_feed_by_id",
+        lambda db, feed_id: SimpleNamespace(
+            id=feed_id,
+            url="https://example.com/rss",
+            company=SimpleNamespace(id=10, name="The Verge", enabled=True),
+            section="Main",
+            enabled=True,
+            status="valid",
+            trust_score=0.95,
+            language="en",
+            icon_url="theVerge/theVerge.svg",
+        ),
+    )
+
+    response = client.patch("/rss/feeds/1/enabled", json={"enabled": False})
+
+    assert response.status_code == 200
+    assert response.json()["id"] == 1
+    assert response.json()["enabled"] is False
+    assert response.json()["company_enabled"] is True
+
+
+def test_rss_toggle_company_endpoint_happy_path(client, monkeypatch) -> None:
+    monkeypatch.setattr(
+        rss_toggle_service_module,
+        "get_rss_company_by_id",
+        lambda db, company_id: SimpleNamespace(
+            id=company_id,
+            name="The Verge",
+            enabled=True,
+        ),
+    )
+
+    response = client.patch("/rss/companies/10/enabled", json={"enabled": False})
+
+    assert response.status_code == 200
+    assert response.json() == RssCompanyRead(id=10, name="The Verge", enabled=False).model_dump()
+
+
+def test_rss_toggle_feed_endpoint_returns_409_on_business_rule_violation(
+    client,
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(
+        rss_toggle_service_module,
+        "get_rss_feed_by_id",
+        lambda db, feed_id: SimpleNamespace(
+            id=feed_id,
+            url="https://example.com/rss",
+            company=SimpleNamespace(id=10, name="The Verge", enabled=False),
+            section="Main",
+            enabled=True,
+            status="valid",
+            trust_score=0.95,
+            language="en",
+            icon_url="theVerge/theVerge.svg",
+        ),
+    )
+
+    response = client.patch("/rss/feeds/1/enabled", json={"enabled": False})
+
+    assert response.status_code == 409
+    assert response.json() == {
+        "message": "Cannot toggle feed 1: company 'The Verge' is disabled"
+    }
+
+
+def test_rss_toggle_feed_endpoint_returns_404_when_feed_is_missing(
+    client,
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(
+        rss_toggle_service_module,
+        "get_rss_feed_by_id",
+        lambda db, feed_id: None,
+    )
+
+    response = client.patch("/rss/feeds/1/enabled", json={"enabled": False})
+
+    assert response.status_code == 404
+    assert response.json() == {"message": "RSS feed 1 not found"}

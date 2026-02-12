@@ -1,24 +1,27 @@
 .card {
+  --padding: 0.9rem;
   border: 1px solid var(--glass-border);
   background: linear-gradient(160deg, rgba(14, 22, 43, 0.84), rgba(11, 18, 34, 0.7));
   backdrop-filter: blur(16px);
   border-radius: 16px;
-  padding: 0.9rem;
+  padding: var(--padding);
   display: grid;
   gap: 0.85rem;
   box-shadow: var(--shadow-soft);
-  min-height: 214px;
 }
 
 .identity {
   display: flex;
+  justify-content: space-between;
+  flex-wrap: nowrap;
   gap: 0.68rem;
-  min-width: 0;
+  min-width: 100%;
+  height: fit-content;
 }
 
 .iconWrap {
-  width: 40px;
-  height: 40px;
+  width: 50px;
+  height: 50px;
   border-radius: 11px;
   border: 1px solid rgba(177, 195, 244, 0.28);
   background: rgba(125, 157, 255, 0.12);
@@ -39,26 +42,39 @@
   font-weight: 700;
 }
 
+.sectionInfo {
+  flex: 1;
+  min-width: 0;
+  height: fit-content;
+}
+
 .identity h3 {
+  text-align: center;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
   margin: 0;
   font-size: 1.1rem;
   line-height: 1.05;
 }
 
-.identity p {
-  margin: 0.3rem 0 0;
-  color: var(--text-muted);
-  font-size: 0.86rem;
-}
-
 .metaRow {
+  margin: 0.44rem 0 0;
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  justify-content: center;
   gap: 0.46rem;
 }
 
-.enabledPill,
-.disabledPill,
+.controls {
+  width: auto;
+  height: fit-content;
+  display: flex;
+  justify-content: flex-end;
+  align-items: start;
+  gap: 0.46rem;
+}
+
 .statusPill,
 .languagePill {
   display: inline-flex;
@@ -70,18 +86,6 @@
   text-transform: uppercase;
   letter-spacing: 0.07em;
   border: 1px solid;
-}
-
-.enabledPill {
-  color: var(--accent-soft);
-  background: rgba(125, 157, 255, 0.15);
-  border-color: rgba(125, 157, 255, 0.45);
-}
-
-.disabledPill {
-  color: #ffd8bb;
-  background: rgba(255, 159, 74, 0.14);
-  border-color: rgba(255, 159, 74, 0.5);
 }
 
 .statusPill {
@@ -105,11 +109,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-}
-
-.trustHeader span {
-  color: var(--text-soft);
   font-size: 0.82rem;
+  color: var(--text-soft);
 }
 
 .trustHeader strong {
@@ -136,6 +137,9 @@
   color: #dde6ff;
   word-break: break-word;
   font-size: 0.86rem;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
   text-decoration: underline;
   text-decoration-color: rgba(221, 230, 255, 0.35);
 }

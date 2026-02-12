@@ -15,6 +15,11 @@ class RssCompany(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(sa.String(50), nullable=False)
+    enabled: Mapped[bool] = mapped_column(
+        sa.Boolean(),
+        nullable=False,
+        server_default=sa.text("true"),
+    )
 
     feeds: Mapped[list["RssFeed"]] = relationship(
         "RssFeed",

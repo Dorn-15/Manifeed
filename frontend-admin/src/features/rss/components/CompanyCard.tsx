@@ -8,7 +8,6 @@ type CompanyCardProps = {
   className?: string;
   companyName: string;
   companySlug: string;
-  feedCount: number;
   isSelected: boolean;
   onSelect: () => void;
 };
@@ -17,7 +16,6 @@ export function CompanyCard({
   className,
   companyName,
   companySlug,
-  feedCount,
   isSelected,
   onSelect,
 }: CompanyCardProps) {
@@ -33,15 +31,12 @@ export function CompanyCard({
       className={cardClassName}
       onClick={onSelect}
       aria-pressed={isSelected}
-      title={`${companyName} (${feedCount} feeds)`}
+      aria-label={`Select ${companyName}`}
     >
-      <div className={styles.logoWrap}>
         {logoUrl && !logoFailed ? (
           <img
             src={logoUrl}
             alt={`${companyName} logo`}
-            width={38}
-            height={38}
             loading="lazy"
             decoding="async"
             onError={() => setLogoFailed(true)}
@@ -49,12 +44,6 @@ export function CompanyCard({
         ) : (
           <span>{companyName.slice(0, 1).toUpperCase()}</span>
         )}
-      </div>
-
-      <div className={styles.content}>
-        <strong>{companyName}</strong>
-        <span>{feedCount} feeds</span>
-      </div>
     </button>
   );
 }

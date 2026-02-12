@@ -16,6 +16,7 @@
   --glass-border: rgba(152, 175, 233, 0.24);
   --glass-border-strong: rgba(177, 195, 244, 0.36);
   --shadow-soft: 0 18px 45px rgba(3, 8, 20, 0.56);
+  --admin-navbar-height: 62px;
 }
 
 * {

@@ -7,10 +7,16 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.errors.rss import (
     RssCatalogParseError,
+    RssCompanyNotFoundError,
+    RssFeedNotFoundError,
+    RssFeedToggleForbiddenError,
     RssIconNotFoundError,
     RssRepositorySyncError,
     # Exception handlers
     rss_catalog_parse_error_handler,
+    rss_company_not_found_error_handler,
+    rss_feed_not_found_error_handler,
+    rss_feed_toggle_forbidden_error_handler,
     rss_icon_not_found_error_handler,
     rss_repository_sync_error_handler,
 )
@@ -88,6 +94,18 @@ def create_app() -> FastAPI:
     app.add_exception_handler(
         RssIconNotFoundError,
         rss_icon_not_found_error_handler,
+    )
+    app.add_exception_handler(
+        RssFeedNotFoundError,
+        rss_feed_not_found_error_handler,
+    )
+    app.add_exception_handler(
+        RssCompanyNotFoundError,
+        rss_company_not_found_error_handler,
+    )
+    app.add_exception_handler(
+        RssFeedToggleForbiddenError,
+        rss_feed_toggle_forbidden_error_handler,
     )
 
     return app

@@ -1,21 +1,23 @@
-from types import SimpleNamespace
 from unittest.mock import Mock
 
 from sqlalchemy.orm import Session
 
-import app.services.rss_feed_service as rss_feed_service_module
+import app.services.rss.rss_feed_service as rss_feed_service_module
+from app.schemas.rss import RssFeedRead
 
 
-def test_get_rss_feeds_maps_database_models_to_api_schema(monkeypatch) -> None:
+def test_get_rss_feeds_returns_database_reads(monkeypatch) -> None:
     db = Mock(spec=Session)
     monkeypatch.setattr(
         rss_feed_service_module,
-        "list_rss_feeds",
+        "list_rss_feeds_read",
         lambda db_session: [
-            SimpleNamespace(
+            RssFeedRead(
                 id=1,
                 url="https://example.com/rss",
-                company=SimpleNamespace(name="The Verge"),
+                company_id=10,
+                company_name="The Verge",
+                company_enabled=True,
                 section="Main",
                 enabled=True,
                 status="unchecked",
@@ -30,5 +32,7 @@ def test_get_rss_feeds_maps_database_models_to_api_schema(monkeypatch) -> None:
 
     assert len(feeds) == 1
     assert feeds[0].id == 1
+    assert feeds[0].company_id == 10
     assert feeds[0].company_name == "The Verge"
+    assert feeds[0].company_enabled is True
     assert feeds[0].icon_url == "theVerge/theVerge.svg"

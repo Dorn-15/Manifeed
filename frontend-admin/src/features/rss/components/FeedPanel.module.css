@@ -13,7 +13,7 @@
   flex-wrap: wrap;
   gap: 0.6rem;
   justify-content: space-between;
-  align-items: baseline;
+  align-items: center;
 }
 
 .header h2 {
