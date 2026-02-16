@@ -6,10 +6,8 @@ import subprocess
 from typing import Literal
 
 from app.errors.rss import RssRepositorySyncError
-from app.utils import (
-    normalize_file_extension,
-    is_empty_directory,
-)
+from .directory_utils import is_empty_directory
+from .normalize_utils import normalize_file_extension
 
 RepositoryGitAction = Literal["cloned", "up_to_date", "update"]
 

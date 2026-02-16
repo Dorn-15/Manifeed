@@ -1,5 +1,6 @@
 from pathlib import Path
-from app.utils import normalize_file_extension
+
+from .normalize_utils import normalize_file_extension
 
 def is_empty_directory(path: Path) -> bool:
     return path.exists() and path.is_dir() and not any(path.iterdir())

@@ -1,3 +1,6 @@
+import re
+from pathlib import Path
+ 
 from app.errors.rss import RssRepositorySyncError
 
 def normalize_file_extension(file_extension: str) -> str:

@@ -8,7 +8,6 @@ from .git_repository_utils import (
     pull_or_clone,
     run_git_command,
     list_changed_files,
-    normalize_file_extension,
 )
 
 from .directory_utils import (
