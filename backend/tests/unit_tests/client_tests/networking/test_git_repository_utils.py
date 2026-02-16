@@ -2,8 +2,9 @@ from pathlib import Path
 
 import pytest
 
-import app.clients.networking.rss.git_repository_utils as git_repository_utils_module
+import app.utils.git_repository_utils as git_repository_utils_module
 from app.errors.rss import RssRepositorySyncError
+from app.utils.git_repository_utils import GitRepositorySyncError
 
 
 def test_pull_or_clone_returns_cloned_when_repository_is_missing(
@@ -110,7 +111,7 @@ def test_pull_or_clone_raises_for_non_git_directory(tmp_path: Path) -> None:
     repository_path.mkdir()
     (repository_path / "README.md").write_text("not a git repo", encoding="utf-8")
 
-    with pytest.raises(RssRepositorySyncError):
+    with pytest.raises(GitRepositorySyncError):
         git_repository_utils_module.pull_or_clone(
             repository_url="https://github.com/Dorn-15/rss_feeds",
             repository_path=repository_path,

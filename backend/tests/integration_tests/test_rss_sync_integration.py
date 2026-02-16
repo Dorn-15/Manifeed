@@ -1,3 +1,4 @@
+import importlib
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -5,12 +6,13 @@ import app.services.rss.rss_feed_service as rss_feed_service_module
 import app.services.rss.rss_icon_service as rss_icon_service_module
 import app.services.rss.rss_sync_service as rss_sync_service_module
 import app.services.rss.rss_toggle_service as rss_toggle_service_module
-from app.errors.rss import (
-    RssIconNotFoundError,
-    RssRepositorySyncError,
-)
+rss_router_module = importlib.import_module("app.routers.rss_router")
+from app.errors.rss import RssIconNotFoundError
+from app.utils.git_repository_utils import GitRepositorySyncError
 from app.schemas.rss import (
     RssCompanyRead,
+    RssFeedCheckRead,
+    RssFeedCheckResultRead,
     RssFeedRead,
     RssSourceFeedSchema,
     RssRepositorySyncRead,
@@ -103,25 +105,27 @@ def test_rss_sync_endpoint_repository_error_is_mapped_to_502(
         rss_sync_service_module,
         "sync_rss_feeds_repository",
         lambda repository_url, repository_path, branch: (_ for _ in ()).throw(
-            RssRepositorySyncError("fetch failed")
+            GitRepositorySyncError("fetch failed")
         ),
     )
 
     response = client.post("/rss/sync")
 
     assert response.status_code == 502
-    assert response.json() == {"message": "fetch failed"}
+    assert response.json() == {"message": "RSS repository sync failed"}
 
 
 def test_rss_list_endpoint_happy_path(client, monkeypatch) -> None:
     monkeypatch.setattr(
         rss_feed_service_module,
-        "list_rss_feeds",
-        lambda db: [
-            SimpleNamespace(
+        "list_rss_feeds_read",
+        lambda _db: [
+            RssFeedRead(
                 id=1,
                 url="https://example.com/rss",
-                company=SimpleNamespace(id=10, name="The Verge", enabled=True),
+                company_id=10,
+                company_name="The Verge",
+                company_enabled=True,
                 section="Main",
                 enabled=True,
                 status="unchecked",
@@ -170,11 +174,18 @@ def test_rss_icon_endpoint_not_found_is_mapped_to_404(client, monkeypatch) -> No
 def test_rss_toggle_feed_endpoint_happy_path(client, monkeypatch) -> None:
     monkeypatch.setattr(
         rss_toggle_service_module,
-        "get_rss_feed_by_id",
-        lambda db, feed_id: SimpleNamespace(
+        "set_rss_feed_enabled",
+        lambda _db, feed_id, enabled: True,
+    )
+    monkeypatch.setattr(
+        rss_toggle_service_module,
+        "get_rss_feed_read_by_id",
+        lambda _db, feed_id: RssFeedRead(
             id=feed_id,
             url="https://example.com/rss",
-            company=SimpleNamespace(id=10, name="The Verge", enabled=True),
+            company_id=10,
+            company_name="The Verge",
+            company_enabled=True,
             section="Main",
             enabled=True,
             status="valid",
@@ -215,11 +226,13 @@ def test_rss_toggle_feed_endpoint_returns_409_on_business_rule_violation(
 ) -> None:
     monkeypatch.setattr(
         rss_toggle_service_module,
-        "get_rss_feed_by_id",
-        lambda db, feed_id: SimpleNamespace(
+        "get_rss_feed_read_by_id",
+        lambda _db, feed_id: RssFeedRead(
             id=feed_id,
             url="https://example.com/rss",
-            company=SimpleNamespace(id=10, name="The Verge", enabled=False),
+            company_id=10,
+            company_name="The Verge",
+            company_enabled=False,
             section="Main",
             enabled=True,
             status="valid",
@@ -243,11 +256,38 @@ def test_rss_toggle_feed_endpoint_returns_404_when_feed_is_missing(
 ) -> None:
     monkeypatch.setattr(
         rss_toggle_service_module,
-        "get_rss_feed_by_id",
-        lambda db, feed_id: None,
+        "get_rss_feed_read_by_id",
+        lambda _db, _feed_id: None,
     )
 
     response = client.patch("/rss/feeds/1/enabled", json={"enabled": False})
 
     assert response.status_code == 404
     assert response.json() == {"message": "RSS feed 1 not found"}
+
+
+def test_rss_check_endpoint_happy_path(client, mock_db_session, monkeypatch) -> None:
+    expected_response = RssFeedCheckRead(
+        valid_count=2,
+        invalid_count=1,
+        results=[
+            RssFeedCheckResultRead(
+                feed_id=4,
+                url="https://example.com/rss/4",
+                status="invalid",
+                error="Request timeout",
+            )
+        ],
+    )
+
+    async def fake_check_rss_feeds(db, feed_ids=None):
+        assert db is mock_db_session
+        assert feed_ids is None
+        return expected_response
+
+    monkeypatch.setattr(rss_router_module, "check_rss_feeds", fake_check_rss_feeds)
+
+    response = client.post("/rss/feeds/check")
+
+    assert response.status_code == 200
+    assert response.json() == expected_response.model_dump()

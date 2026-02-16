@@ -1,7 +1,8 @@
 COMPOSE := $(shell if docker compose version >/dev/null 2>&1; then echo "docker compose"; elif docker-compose version >/dev/null 2>&1; then echo "docker-compose"; else echo "docker compose"; fi)
 SERVICE ?=
+PYTEST_ARGS ?= tests -vv --color=yes --tb=short -ra
 
-.PHONY: up build down restart logs clean clean-all db-migrate db-reset
+.PHONY: up build down restart logs clean clean-all db-migrate db-reset test
 
 up:
 	@if [ -n "$(SERVICE)" ]; then \
@@ -61,3 +62,6 @@ db-reset:
 	$(COMPOSE) up -d postgres backend
 	$(COMPOSE) exec backend alembic downgrade base
 	$(COMPOSE) exec backend alembic upgrade head
+
+test:
+	$(COMPOSE) run --rm backend sh -lc "PIP_ROOT_USER_ACTION=ignore python -m pip install --disable-pip-version-check --quiet pytest && python -m pytest $(PYTEST_ARGS)"

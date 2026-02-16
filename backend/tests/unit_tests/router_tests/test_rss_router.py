@@ -1,7 +1,11 @@
 import importlib
+from contextlib import contextmanager
 
+from app.utils import JobAlreadyRunning
 from app.schemas.rss import (
     RssCompanyRead,
+    RssFeedCheckRead,
+    RssFeedCheckResultRead,
     RssFeedRead,
     RssSyncRead,
 )
@@ -133,3 +137,66 @@ def test_patch_company_enabled_route_returns_service_result(
 
     assert response.status_code == 200
     assert response.json() == expected_response.model_dump()
+
+
+def test_check_rss_feeds_route_returns_service_result(
+    client,
+    mock_db_session,
+    monkeypatch,
+) -> None:
+    expected_response = RssFeedCheckRead(
+        valid_count=3,
+        invalid_count=1,
+        results=[
+            RssFeedCheckResultRead(
+                feed_id=7,
+                url="https://example.com/rss/7",
+                status="invalid",
+                error="Request timeout",
+            )
+        ],
+    )
+
+    async def fake_check_rss_feeds(db, feed_ids):
+        assert db is mock_db_session
+        assert feed_ids == [7, 9]
+        return expected_response
+
+    monkeypatch.setattr(
+        rss_router_module,
+        "check_rss_feeds",
+        fake_check_rss_feeds,
+    )
+
+    response = client.post("/rss/feeds/check?feed_ids=7&feed_ids=9")
+
+    assert response.status_code == 200
+    assert response.json() == expected_response.model_dump()
+
+
+def test_sync_route_returns_409_when_job_lock_is_busy(client, monkeypatch) -> None:
+    @contextmanager
+    def busy_job_lock(_db, _name):
+        raise JobAlreadyRunning("rss_sync")
+        yield
+
+    monkeypatch.setattr(rss_router_module, "job_lock", busy_job_lock)
+
+    response = client.post("/rss/sync")
+
+    assert response.status_code == 409
+    assert response.json() == {"message": "RSS sync already running"}
+
+
+def test_patch_feed_route_returns_409_when_job_lock_is_busy(client, monkeypatch) -> None:
+    @contextmanager
+    def busy_job_lock(_db, _name):
+        raise JobAlreadyRunning("rss_patch_feed_enabled")
+        yield
+
+    monkeypatch.setattr(rss_router_module, "job_lock", busy_job_lock)
+
+    response = client.patch("/rss/feeds/1/enabled", json={"enabled": False})
+
+    assert response.status_code == 409
+    assert response.json() == {"message": "RSS feed toggle already running"}

@@ -8,6 +8,7 @@ from .custom_exceptions import (
     RssFeedNotFoundError,
     RssFeedToggleForbiddenError,
     RssIconNotFoundError,
+    RssJobAlreadyRunningError,
     RssRepositorySyncError,
 )
 
@@ -65,6 +66,16 @@ def rss_company_not_found_error_handler(
 def rss_feed_toggle_forbidden_error_handler(
     _: Request,
     exception: RssFeedToggleForbiddenError,
+) -> JSONResponse:
+    return JSONResponse(
+        status_code=status.HTTP_409_CONFLICT,
+        content={"message": str(exception)},
+    )
+
+
+def rss_job_already_running_error_handler(
+    _: Request,
+    exception: RssJobAlreadyRunningError,
 ) -> JSONResponse:
     return JSONResponse(
         status_code=status.HTTP_409_CONFLICT,

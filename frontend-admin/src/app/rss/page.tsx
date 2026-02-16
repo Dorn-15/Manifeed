@@ -12,12 +12,13 @@ import {
 import { PopInfo, type PopInfoType } from "@/components/ui";
 import { RssSyncPanel } from "@/features/rss/components/RssSyncPanel";
 import {
+  checkRssFeeds,
   listRssFeeds,
   syncRssFeeds,
   updateRssCompanyEnabled,
   updateRssFeedEnabled,
 } from "@/services/api/rss.service";
-import type { RssFeed, RssSyncRead } from "@/types/rss";
+import type { RssFeed, RssFeedCheckRead, RssSyncRead } from "@/types/rss";
 
 import styles from "./page.module.css";
 
@@ -100,11 +101,30 @@ function formatSyncSummary(syncResult: RssSyncRead): string {
   ].join(" | ");
 }
 
+function formatCheckSummary(checkResult: RssFeedCheckRead): string {
+  const summary = [
+    `valid=${checkResult.valid_count}`,
+    `invalid=${checkResult.invalid_count}`,
+    `errors=${checkResult.results.length}`,
+  ];
+
+  if (checkResult.results.length === 0) {
+    return summary.join(" | ");
+  }
+
+  const errorPreview = checkResult.results
+    .slice(0, 3)
+    .map((result) => `#${result.feed_id}: ${result.error}`)
+    .join(" ; ");
+  return `${summary.join(" | ")} | ${errorPreview}`;
+}
+
 export default function AdminRssPage() {
   const [feeds, setFeeds] = useState<RssFeed[]>([]);
   const [loadingFeeds, setLoadingFeeds] = useState<boolean>(true);
   const [feedsError, setFeedsError] = useState<string | null>(null);
   const [syncing, setSyncing] = useState<boolean>(false);
+  const [checking, setChecking] = useState<boolean>(false);
   const [popInfo, setPopInfo] = useState<PopInfoState | null>(null);
   const [lastRefreshAt, setLastRefreshAt] = useState<string | null>(null);
 
@@ -166,6 +186,25 @@ export default function AdminRssPage() {
       showPopInfo("Sync error", message, "alert");
     } finally {
       setSyncing(false);
+    }
+  }, [loadFeeds, showPopInfo]);
+
+  const handleCheck = useCallback(async () => {
+    setChecking(true);
+
+    try {
+      const payload = await checkRssFeeds();
+      showPopInfo(
+        "Last check result",
+        formatCheckSummary(payload),
+        payload.invalid_count > 0 ? "alert" : "info",
+      );
+      await loadFeeds();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unexpected error during check";
+      showPopInfo("Check error", message, "alert");
+    } finally {
+      setChecking(false);
     }
   }, [loadFeeds, showPopInfo]);
 
@@ -328,10 +367,12 @@ export default function AdminRssPage() {
 
       <RssSyncPanel
         syncing={syncing}
+        checking={checking}
         loadingFeeds={loadingFeeds}
         feedCount={feeds.length}
         lastRefreshAt={lastRefreshAt}
         onSync={handleSync}
+        onCheck={handleCheck}
         onRefresh={loadFeeds}
       />
 

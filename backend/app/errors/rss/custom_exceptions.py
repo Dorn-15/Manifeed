@@ -24,3 +24,7 @@ class RssCompanyNotFoundError(RssSyncError):
 
 class RssFeedToggleForbiddenError(RssSyncError):
     """Raised when RSS feed toggle rules are violated."""
+
+
+class RssJobAlreadyRunningError(RssSyncError):
+    """Raised when an RSS operation is already running."""

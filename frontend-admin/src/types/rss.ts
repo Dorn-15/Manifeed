@@ -30,3 +30,18 @@ export type RssSyncRead = {
   updated_feeds: number;
   deleted_feeds: number;
 };
+
+export type RssFeedCheckStatus = "valid" | "invalid";
+
+export type RssFeedCheckResultRead = {
+  feed_id: number;
+  url: string;
+  status: RssFeedCheckStatus;
+  error: string;
+};
+
+export type RssFeedCheckRead = {
+  results: RssFeedCheckResultRead[];
+  valid_count: number;
+  invalid_count: number;
+};

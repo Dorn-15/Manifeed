@@ -8,6 +8,7 @@ from .git_repository_utils import (
     pull_or_clone,
     run_git_command,
     list_changed_files,
+    GitRepositorySyncError,
 )
 
 from .directory_utils import (
@@ -20,6 +21,10 @@ from .normalize_utils import (
     normalize_name_from_filename,
     normalize_language,
 )
+from .job_lock import (
+    JobAlreadyRunning,
+    job_lock,
+)
 
 __all__ = [
     #rss_repo
@@ -30,6 +35,7 @@ __all__ = [
     "pull_or_clone",
     "run_git_command",
     "list_changed_files",
+    "GitRepositorySyncError",
     #directory_utils
     "is_empty_directory",
     "list_files_with_extension",
@@ -37,4 +43,7 @@ __all__ = [
     "normalize_file_extension",
     "normalize_name_from_filename",
     "normalize_language",
+    #job_lock
+    "JobAlreadyRunning",
+    "job_lock",
 ]

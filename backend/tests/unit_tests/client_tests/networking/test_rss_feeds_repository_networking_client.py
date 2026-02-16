@@ -1,10 +1,13 @@
+import importlib
 import json
 from pathlib import Path
 
 import pytest
 
-import app.clients.networking.rss.sync_rss_feeds_repository as repository_client_module
-from app.clients.networking.rss.git_repository_utils import PullOrCloneResult
+repository_client_module = importlib.import_module(
+    "app.clients.networking.rss.sync_rss_feeds_repository"
+)
+from app.utils.git_repository_utils import PullOrCloneResult
 from app.errors.rss import RssCatalogParseError
 from app.utils import (
     list_files_with_extension,

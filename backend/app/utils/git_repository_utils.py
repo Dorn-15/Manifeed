@@ -5,12 +5,13 @@ from pathlib import Path
 import subprocess
 from typing import Literal
 
-from app.errors.rss import RssRepositorySyncError
 from .directory_utils import is_empty_directory
 from .normalize_utils import normalize_file_extension
 
 RepositoryGitAction = Literal["cloned", "up_to_date", "update"]
 
+class GitRepositorySyncError(Exception):
+    """Raised when a git repository sync operation fails."""
 
 @dataclass(frozen=True)
 class PullOrCloneResult:
@@ -40,7 +41,7 @@ def pull_or_clone(
         return PullOrCloneResult(action="cloned", current_revision=current_revision)
 
     if not (repository_path / ".git").exists():
-        raise RssRepositorySyncError(
+        raise GitRepositorySyncError(
             f"Path exists but is not a git repository: {repository_path}"
         )
 
@@ -91,7 +92,7 @@ def _validate_repository_remote(repository_path: Path, expected_repository_url: 
         cwd=repository_path,
     )
     if current_remote_url != expected_repository_url:
-        raise RssRepositorySyncError(
+        raise GitRepositorySyncError(
             "Repository remote mismatch for "
             f"{repository_path}. Expected {expected_repository_url}, got {current_remote_url}."
         )
@@ -109,7 +110,7 @@ def run_git_command(command: list[str], cwd: Path | None) -> str:
         )
     except subprocess.CalledProcessError as exception:
         stderr = exception.stderr.strip() or "no stderr output"
-        raise RssRepositorySyncError(
+        raise GitRepositorySyncError(
             f"Git command failed ({' '.join(full_command)}): {stderr}"
         ) from exception
     return process.stdout.strip()

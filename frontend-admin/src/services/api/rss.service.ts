@@ -1,5 +1,10 @@
 import { apiRequest, getApiBaseUrl } from "@/services/api/client";
-import type { RssCompany, RssFeed, RssSyncRead } from "@/types/rss";
+import type {
+  RssCompany,
+  RssFeed,
+  RssFeedCheckRead,
+  RssSyncRead,
+} from "@/types/rss";
 
 function encodeIconPath(iconUrl: string): string {
   return iconUrl
@@ -28,6 +33,21 @@ export async function listRssFeeds(): Promise<RssFeed[]> {
 
 export async function syncRssFeeds(): Promise<RssSyncRead> {
   return apiRequest<RssSyncRead>("/rss/sync", {
+    method: "POST",
+  });
+}
+
+export async function checkRssFeeds(feedIds?: number[]): Promise<RssFeedCheckRead> {
+  const searchParams = new URLSearchParams();
+  if (feedIds) {
+    for (const feedId of feedIds) {
+      searchParams.append("feed_ids", String(feedId));
+    }
+  }
+
+  const queryString = searchParams.toString();
+  const path = queryString ? `/rss/feeds/check?${queryString}` : "/rss/feeds/check";
+  return apiRequest<RssFeedCheckRead>(path, {
     method: "POST",
   });
 }

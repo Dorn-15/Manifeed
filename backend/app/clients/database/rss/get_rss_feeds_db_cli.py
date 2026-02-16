@@ -69,13 +69,6 @@ def get_rss_feed_read_by_id(db: Session, feed_id: int) -> RssFeedRead | None:
     return RssFeedRead(**row) if row else None
 
 
-def set_rss_feed_enabled(db: Session, feed_id: int, enabled: bool) -> bool:
-    result = db.execute(
-        update(RssFeed).where(RssFeed.id == feed_id).values(enabled=enabled)
-    )
-    return result.rowcount > 0
-
-
 def get_rss_company_by_id(db: Session, company_id: int) -> RssCompany | None:
     return db.execute(
         select(RssCompany).where(RssCompany.id == company_id)

@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 
+import logging
 from app.clients.database.rss import (
     get_rss_company_by_id,
     get_rss_feed_read_by_id,
@@ -12,6 +13,7 @@ from app.errors.rss import (
 )
 from app.schemas.rss import RssCompanyRead, RssFeedRead
 
+logger = logging.getLogger(__name__)
 
 def toggle_rss_feed_enabled(db: Session, feed_id: int, enabled: bool) -> RssFeedRead:
     feed = get_rss_feed_read_by_id(db, feed_id)
@@ -23,10 +25,9 @@ def toggle_rss_feed_enabled(db: Session, feed_id: int, enabled: bool) -> RssFeed
         raise RssFeedToggleForbiddenError(
             f"Cannot toggle feed {feed_id}: company '{company}' is disabled"
         )
-
-    if feed.enabled and not enabled and feed.status == "invalid":
+    if feed.status == "invalid":
         raise RssFeedToggleForbiddenError(
-            f"Cannot disable feed {feed_id}: status is invalid"
+            f"Cannot toggle feed {feed_id}: status is invalid"
         )
 
     if feed.enabled != enabled:

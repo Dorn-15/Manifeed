@@ -11,6 +11,7 @@ from app.errors.rss import (
     RssFeedNotFoundError,
     RssFeedToggleForbiddenError,
     RssIconNotFoundError,
+    RssJobAlreadyRunningError,
     RssRepositorySyncError,
     # Exception handlers
     rss_catalog_parse_error_handler,
@@ -18,6 +19,7 @@ from app.errors.rss import (
     rss_feed_not_found_error_handler,
     rss_feed_toggle_forbidden_error_handler,
     rss_icon_not_found_error_handler,
+    rss_job_already_running_error_handler,
     rss_repository_sync_error_handler,
 )
 
@@ -83,30 +85,18 @@ def create_app() -> FastAPI:
 
     app.include_router(health_router)
     app.include_router(rss_router)
-    app.add_exception_handler(
-        RssRepositorySyncError,
-        rss_repository_sync_error_handler,
+
+    exception_handlers = (
+        (RssRepositorySyncError, rss_repository_sync_error_handler),
+        (RssCatalogParseError, rss_catalog_parse_error_handler),
+        (RssIconNotFoundError, rss_icon_not_found_error_handler),
+        (RssFeedNotFoundError, rss_feed_not_found_error_handler),
+        (RssCompanyNotFoundError, rss_company_not_found_error_handler),
+        (RssFeedToggleForbiddenError, rss_feed_toggle_forbidden_error_handler),
+        (RssJobAlreadyRunningError, rss_job_already_running_error_handler),
     )
-    app.add_exception_handler(
-        RssCatalogParseError,
-        rss_catalog_parse_error_handler,
-    )
-    app.add_exception_handler(
-        RssIconNotFoundError,
-        rss_icon_not_found_error_handler,
-    )
-    app.add_exception_handler(
-        RssFeedNotFoundError,
-        rss_feed_not_found_error_handler,
-    )
-    app.add_exception_handler(
-        RssCompanyNotFoundError,
-        rss_company_not_found_error_handler,
-    )
-    app.add_exception_handler(
-        RssFeedToggleForbiddenError,
-        rss_feed_toggle_forbidden_error_handler,
-    )
+    for exc_cls, handler in exception_handlers:
+        app.add_exception_handler(exc_cls, handler)
 
     return app
 
