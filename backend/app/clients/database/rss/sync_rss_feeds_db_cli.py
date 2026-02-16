@@ -80,7 +80,8 @@ def upsert_feed(
 
     existing_feed.company = company
     existing_feed.section = payload.section
-    existing_feed.enabled = payload.enabled
+    if existing_feed.status != "invalid":
+        existing_feed.enabled = payload.enabled
     existing_feed.trust_score = payload.trust_score
     existing_feed.language = payload.language
     existing_feed.icon_url = payload.icon_url

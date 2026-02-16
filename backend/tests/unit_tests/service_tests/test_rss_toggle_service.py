@@ -127,6 +127,58 @@ def test_toggle_rss_feed_enabled_does_not_commit_when_value_unchanged(monkeypatc
     db.commit.assert_not_called()
 
 
+def test_toggle_rss_feed_enabled_does_not_raise_when_invalid_status_is_unchanged(
+    monkeypatch,
+) -> None:
+    db = Mock(spec=Session)
+    feed = RssFeedRead(
+        id=12,
+        url="https://example.com/rss",
+        enabled=False,
+        status="invalid",
+        trust_score=0.8,
+        company_id=3,
+        company_name="Le Monde",
+        company_enabled=True,
+    )
+    monkeypatch.setattr(
+        rss_toggle_service_module,
+        "get_rss_feed_read_by_id",
+        lambda _db, _feed_id: feed,
+    )
+
+    result = rss_toggle_service_module.toggle_rss_feed_enabled(db, feed_id=12, enabled=False)
+
+    assert result.enabled is False
+    db.commit.assert_not_called()
+
+
+def test_toggle_rss_feed_enabled_does_not_raise_when_company_disabled_and_unchanged(
+    monkeypatch,
+) -> None:
+    db = Mock(spec=Session)
+    feed = RssFeedRead(
+        id=12,
+        url="https://example.com/rss",
+        enabled=True,
+        status="valid",
+        trust_score=0.8,
+        company_id=3,
+        company_name="Le Monde",
+        company_enabled=False,
+    )
+    monkeypatch.setattr(
+        rss_toggle_service_module,
+        "get_rss_feed_read_by_id",
+        lambda _db, _feed_id: feed,
+    )
+
+    result = rss_toggle_service_module.toggle_rss_feed_enabled(db, feed_id=12, enabled=True)
+
+    assert result.enabled is True
+    db.commit.assert_not_called()
+
+
 def test_toggle_rss_feed_enabled_rolls_back_when_update_fails(monkeypatch) -> None:
     db = Mock(spec=Session)
     feed = RssFeedRead(

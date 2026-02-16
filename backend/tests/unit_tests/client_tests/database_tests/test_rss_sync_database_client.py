@@ -27,6 +27,7 @@ def test_get_or_create_company_creates_company_when_missing() -> None:
 def test_upsert_feed_updates_existing_feed() -> None:
     mock_db = Mock(spec=Session)
     existing_feed = Mock(spec=RssFeed)
+    existing_feed.status = "valid"
     mock_db.execute.return_value.scalar_one_or_none.return_value = existing_feed
 
     payload = RssFeedUpsertSchema(
@@ -50,6 +51,34 @@ def test_upsert_feed_updates_existing_feed() -> None:
     assert existing_feed.section == "Tech"
     assert existing_feed.tags == tags
     mock_db.add.assert_not_called()
+    mock_db.flush.assert_called_once()
+
+
+def test_upsert_feed_keeps_enabled_for_invalid_existing_feed() -> None:
+    mock_db = Mock(spec=Session)
+    existing_feed = Mock(spec=RssFeed)
+    existing_feed.status = "invalid"
+    existing_feed.enabled = False
+    mock_db.execute.return_value.scalar_one_or_none.return_value = existing_feed
+
+    payload = RssFeedUpsertSchema(
+        url="https://example.com/rss",
+        section="Tech",
+        enabled=True,
+        trust_score=0.9,
+        language="en",
+        icon_url="icons/tech.svg",
+        parsing_config={"item_tag": "item"},
+        tags=["tech"],
+    )
+    company = SimpleNamespace(id=1, name="The Verge")
+    tags = [RssTag(name="tech")]
+
+    feed, created = upsert_feed(mock_db, company=company, payload=payload, tags=tags)
+
+    assert feed is existing_feed
+    assert created is False
+    assert existing_feed.enabled is False
     mock_db.flush.assert_called_once()
 
 

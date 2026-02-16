@@ -19,6 +19,8 @@ def toggle_rss_feed_enabled(db: Session, feed_id: int, enabled: bool) -> RssFeed
     feed = get_rss_feed_read_by_id(db, feed_id)
     if feed is None:
         raise RssFeedNotFoundError(f"RSS feed {feed_id} not found")
+    if feed.enabled == enabled:
+        return feed
 
     company = feed.company_name
     if company is not None and feed.company_enabled is False:
@@ -30,16 +32,15 @@ def toggle_rss_feed_enabled(db: Session, feed_id: int, enabled: bool) -> RssFeed
             f"Cannot toggle feed {feed_id}: status is invalid"
         )
 
-    if feed.enabled != enabled:
-        try:
-            updated = set_rss_feed_enabled(db, feed_id=feed_id, enabled=enabled)
-            if not updated:
-                raise RssFeedNotFoundError(f"RSS feed {feed_id} not found")
-            db.commit()
-        except Exception:
-            db.rollback()
-            raise
-        feed.enabled = enabled
+    try:
+        updated = set_rss_feed_enabled(db, feed_id=feed_id, enabled=enabled)
+        if not updated:
+            raise RssFeedNotFoundError(f"RSS feed {feed_id} not found")
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+    feed.enabled = enabled
 
     return feed
 
