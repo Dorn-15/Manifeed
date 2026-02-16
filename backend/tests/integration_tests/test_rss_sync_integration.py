@@ -36,11 +36,9 @@ def test_rss_sync_endpoint_happy_path(
         rss_sync_service_module,
         "sync_rss_feeds_repository",
         lambda repository_url, repository_path, branch: RssRepositorySyncRead(
-            action="pulled",
+            action="update",
             repository_path=str(repository_path),
-            commit_before="abc123",
-            commit_after="def456",
-            changed_json_files=["Le_Monde.json"],
+            changed_files=["Le_Monde.json"],
         ),
     )
     monkeypatch.setattr(
@@ -83,7 +81,7 @@ def test_rss_sync_endpoint_happy_path(
     response = client.post("/rss/sync")
 
     assert response.status_code == 200
-    assert response.json()["repository_action"] == "pulled"
+    assert response.json()["repository_action"] == "update"
     assert response.json()["processed_files"] == 1
     assert response.json()["processed_feeds"] == 1
     assert response.json()["created_feeds"] == 1

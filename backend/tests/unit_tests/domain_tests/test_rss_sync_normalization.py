@@ -1,12 +1,12 @@
 from app.domain.rss import (
-    normalize_company_name_from_filename,
     normalize_source_feed_entry,
 )
 from app.schemas.rss import RssSourceFeedSchema
+from app.utils import normalize_name_from_filename
 
 
-def test_normalize_company_name_from_filename() -> None:
-    company_name = normalize_company_name_from_filename("The_Wall_Street_Journal.json")
+def test_normalize_name_from_filename() -> None:
+    company_name = normalize_name_from_filename("The_Wall_Street_Journal.json")
     assert company_name == "The Wall Street Journal"
 
 

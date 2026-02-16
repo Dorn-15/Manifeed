@@ -29,9 +29,7 @@ def test_sync_rss_catalog_returns_empty_stats_when_repository_is_up_to_date(
         return RssRepositorySyncRead(
             action="up_to_date",
             repository_path=str(repository_path),
-            commit_before="abc123",
-            commit_after="abc123",
-            changed_json_files=[],
+            changed_files=[],
         )
 
     monkeypatch.setattr(
@@ -64,11 +62,9 @@ def test_sync_rss_catalog_processes_changed_files_and_commits(monkeypatch, tmp_p
         rss_sync_service_module,
         "sync_rss_feeds_repository",
         lambda repository_url, repository_path, branch: RssRepositorySyncRead(
-            action="pulled",
+            action="update",
             repository_path=str(repository_path),
-            commit_before="abc123",
-            commit_after="def456",
-            changed_json_files=["Le_Monde.json"],
+            changed_files=["Le_Monde.json"],
         ),
     )
 
@@ -124,7 +120,7 @@ def test_sync_rss_catalog_processes_changed_files_and_commits(monkeypatch, tmp_p
 
     response = rss_sync_service_module.sync_rss_catalog(mock_db)
 
-    assert response.repository_action == "pulled"
+    assert response.repository_action == "update"
     assert response.processed_files == 1
     assert response.processed_feeds == 2
     assert response.created_companies == 1
@@ -151,11 +147,9 @@ def test_sync_rss_catalog_rolls_back_on_parsing_error(monkeypatch, tmp_path) -> 
         rss_sync_service_module,
         "sync_rss_feeds_repository",
         lambda repository_url, repository_path, branch: RssRepositorySyncRead(
-            action="pulled",
+            action="update",
             repository_path=str(repository_path),
-            commit_before="abc123",
-            commit_after="def456",
-            changed_json_files=["Le_Monde.json"],
+            changed_files=["Le_Monde.json"],
         ),
     )
     monkeypatch.setattr(

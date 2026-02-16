@@ -18,7 +18,7 @@ export type RssCompany = {
   enabled: boolean;
 };
 
-export type RssRepositoryAction = "cloned" | "pulled" | "up_to_date";
+export type RssRepositoryAction = "cloned" | "update" | "up_to_date";
 
 export type RssSyncRead = {
   repository_action: RssRepositoryAction;

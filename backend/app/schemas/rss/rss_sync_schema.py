@@ -2,15 +2,13 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-RepositoryAction = Literal["cloned", "pulled", "up_to_date"]
+RepositoryAction = Literal["cloned", "update", "up_to_date"]
 
 
 class RssRepositorySyncRead(BaseModel):
     action: RepositoryAction
     repository_path: str
-    commit_before: str | None = None
-    commit_after: str
-    changed_json_files: list[str] = Field(default_factory=list)
+    changed_files: list[str] = Field(default_factory=list)
 
 
 class RssSyncRead(BaseModel):
