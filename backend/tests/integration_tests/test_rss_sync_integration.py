@@ -7,6 +7,7 @@ import app.services.rss.rss_icon_service as rss_icon_service_module
 import app.services.rss.rss_sync_service as rss_sync_service_module
 import app.services.rss.rss_toggle_service as rss_toggle_service_module
 rss_router_module = importlib.import_module("app.routers.rss_router")
+sources_router_module = importlib.import_module("app.routers.sources_router")
 from app.errors.rss import RssIconNotFoundError
 from app.utils.git_repository_utils import GitRepositorySyncError
 from app.schemas.rss import (
@@ -17,6 +18,7 @@ from app.schemas.rss import (
     RssSourceFeedSchema,
     RssRepositorySyncRead,
 )
+from app.schemas.sources import RssSourceIngestRead, RssSourcePageRead, RssSourceRead
 
 
 def test_rss_sync_endpoint_happy_path(
@@ -66,13 +68,18 @@ def test_rss_sync_endpoint_happy_path(
     )
     monkeypatch.setattr(
         rss_sync_service_module,
+        "list_rss_feeds_by_urls",
+        lambda db, urls: {},
+    )
+    monkeypatch.setattr(
+        rss_sync_service_module,
         "get_or_create_tags",
         lambda db, tag_names: ([object()], 1),
     )
     monkeypatch.setattr(
         rss_sync_service_module,
         "upsert_feed",
-        lambda db, company, payload, tags: (object(), True),
+        lambda db, company, payload, tags, existing_feed=None: (object(), True),
     )
     monkeypatch.setattr(
         rss_sync_service_module,
@@ -206,7 +213,7 @@ def test_rss_toggle_feed_endpoint_happy_path(client, monkeypatch) -> None:
 def test_rss_toggle_company_endpoint_happy_path(client, monkeypatch) -> None:
     monkeypatch.setattr(
         rss_toggle_service_module,
-        "get_rss_company_by_id",
+        "get_company_by_id",
         lambda db, company_id: SimpleNamespace(
             id=company_id,
             name="The Verge",
@@ -291,3 +298,61 @@ def test_rss_check_endpoint_happy_path(client, mock_db_session, monkeypatch) -> 
 
     assert response.status_code == 200
     assert response.json() == expected_response.model_dump()
+
+
+def test_rss_ingest_sources_endpoint_happy_path(
+    client,
+    mock_db_session,
+    monkeypatch,
+) -> None:
+    expected_response = RssSourceIngestRead(
+        status="completed",
+        feeds_processed=1,
+        feeds_skipped=0,
+        sources_created=2,
+        sources_updated=1,
+        duration_ms=50,
+    )
+
+    async def fake_ingest_rss_sources(db, feed_ids=None):
+        assert db is mock_db_session
+        assert feed_ids == [1]
+        return expected_response
+
+    monkeypatch.setattr(sources_router_module, "ingest_rss_sources", fake_ingest_rss_sources)
+
+    response = client.post("/sources/ingest", json={"feed_ids": [1]})
+
+    assert response.status_code == 200
+    assert response.json() == expected_response.model_dump()
+
+
+def test_rss_sources_list_endpoint_happy_path(client, mock_db_session, monkeypatch) -> None:
+    expected_payload = RssSourcePageRead(
+        items=[
+            RssSourceRead(
+                id=1,
+                title="Source 1",
+                summary="Summary 1",
+                url="https://example.com/source-1",
+                image_url=None,
+                company_name="The Verge",
+            )
+        ],
+        total=1,
+        limit=50,
+        offset=0,
+    )
+
+    def fake_get_rss_sources(db, limit, offset):
+        assert db is mock_db_session
+        assert limit == 50
+        assert offset == 0
+        return expected_payload
+
+    monkeypatch.setattr(sources_router_module, "get_rss_sources", fake_get_rss_sources)
+
+    response = client.get("/sources/")
+
+    assert response.status_code == 200
+    assert response.json() == expected_payload.model_dump(mode="json")

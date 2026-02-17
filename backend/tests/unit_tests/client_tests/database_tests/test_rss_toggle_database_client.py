@@ -3,7 +3,7 @@ from unittest.mock import Mock
 from sqlalchemy.orm import Session
 
 from app.clients.database.rss import (
-    get_rss_company_by_id,
+    get_company_by_id,
     get_rss_feed_by_id,
     get_rss_feed_read_by_id,
     set_rss_feed_enabled,
@@ -26,7 +26,7 @@ def test_get_rss_company_by_id_returns_database_row() -> None:
     expected_company = object()
     mock_db.execute.return_value.scalar_one_or_none.return_value = expected_company
 
-    company = get_rss_company_by_id(mock_db, company_id=5)
+    company = get_company_by_id(mock_db, company_id=5)
 
     assert company is expected_company
     mock_db.execute.assert_called_once()

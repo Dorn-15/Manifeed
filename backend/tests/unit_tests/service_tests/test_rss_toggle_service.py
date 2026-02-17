@@ -212,7 +212,7 @@ def test_toggle_rss_company_enabled_raises_when_company_is_missing(monkeypatch) 
     db = Mock(spec=Session)
     monkeypatch.setattr(
         rss_toggle_service_module,
-        "get_rss_company_by_id",
+        "get_company_by_id",
         lambda _db, _company_id: None,
     )
 
@@ -225,7 +225,7 @@ def test_toggle_rss_company_enabled_updates_company_and_commits(monkeypatch) -> 
     company = SimpleNamespace(id=5, name="The Verge", enabled=True)
     monkeypatch.setattr(
         rss_toggle_service_module,
-        "get_rss_company_by_id",
+        "get_company_by_id",
         lambda _db, _company_id: company,
     )
 

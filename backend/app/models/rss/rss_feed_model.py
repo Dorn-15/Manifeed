@@ -92,3 +92,15 @@ class RssFeed(Base):
         secondary="rss_feed_tags",
         back_populates="feeds",
     )
+    source_links: Mapped[list["RssSourceFeed"]] = relationship(
+        "RssSourceFeed",
+        back_populates="feed",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    sources: Mapped[list["RssSource"]] = relationship(
+        "RssSource",
+        secondary="rss_source_feeds",
+        back_populates="feeds",
+        viewonly=True,
+    )

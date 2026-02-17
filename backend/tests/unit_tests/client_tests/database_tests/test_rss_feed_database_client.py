@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.clients.database.rss import (
     list_rss_feeds,
-    list_rss_feeds_for_check,
+    list_rss_feeds,
     list_rss_feeds_read,
 )
 
@@ -54,7 +54,7 @@ def test_list_rss_feeds_for_check_returns_database_rows() -> None:
     expected_feeds = [object(), object()]
     mock_db.execute.return_value.scalars.return_value.all.return_value = expected_feeds
 
-    feeds = list_rss_feeds_for_check(mock_db, feed_ids=[2, 2, 1])
+    feeds = list_rss_feeds(mock_db, feed_ids=[2, 2, 1])
 
     assert feeds == expected_feeds
     mock_db.execute.assert_called_once()

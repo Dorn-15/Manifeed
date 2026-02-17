@@ -8,6 +8,7 @@ import styles from "./AdminNavbar.module.css";
 const NAV_ITEMS = [
   { href: "/", label: "Dashboard" },
   { href: "/rss", label: "RSS" },
+  { href: "/sources", label: "Sources" },
 ];
 
 function isActiveRoute(pathname: string, href: string): boolean {

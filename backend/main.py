@@ -26,6 +26,7 @@ from app.errors.rss import (
 from app.routers import (
     health_router,
     rss_router,
+    sources_router,
 )
 
 
@@ -85,6 +86,7 @@ def create_app() -> FastAPI:
 
     app.include_router(health_router)
     app.include_router(rss_router)
+    app.include_router(sources_router)
 
     exception_handlers = (
         (RssRepositorySyncError, rss_repository_sync_error_handler),

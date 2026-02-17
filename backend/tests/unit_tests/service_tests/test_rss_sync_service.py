@@ -100,6 +100,11 @@ def test_sync_rss_catalog_processes_changed_files_and_commits(monkeypatch, tmp_p
         "get_or_create_company",
         lambda db, company_name: (SimpleNamespace(id=1), True),
     )
+    monkeypatch.setattr(
+        rss_sync_service_module,
+        "list_rss_feeds_by_urls",
+        lambda db, urls: {},
+    )
     created_tags_by_call = iter([1, 0])
     monkeypatch.setattr(
         rss_sync_service_module,
@@ -110,7 +115,10 @@ def test_sync_rss_catalog_processes_changed_files_and_commits(monkeypatch, tmp_p
     monkeypatch.setattr(
         rss_sync_service_module,
         "upsert_feed",
-        lambda db, company, payload, tags: (object(), next(created_feeds_by_call)),
+        lambda db, company, payload, tags, existing_feed=None: (
+            object(),
+            next(created_feeds_by_call),
+        ),
     )
     monkeypatch.setattr(
         rss_sync_service_module,
@@ -130,6 +138,103 @@ def test_sync_rss_catalog_processes_changed_files_and_commits(monkeypatch, tmp_p
     assert response.deleted_feeds == 1
     mock_db.commit.assert_called_once()
     mock_db.rollback.assert_not_called()
+
+
+def test_sync_rss_catalog_preloads_existing_feeds_once(monkeypatch, tmp_path) -> None:
+    mock_db = Mock(spec=Session)
+    repository_path = tmp_path / "rss_feeds"
+    repository_path.mkdir()
+    (repository_path / "Le_Monde.json").write_text("[]", encoding="utf-8")
+
+    monkeypatch.setattr(
+        rss_sync_service_module,
+        "resolve_rss_feeds_repository_path",
+        lambda: repository_path,
+    )
+    monkeypatch.setattr(
+        rss_sync_service_module,
+        "sync_rss_feeds_repository",
+        lambda repository_url, repository_path, branch: RssRepositorySyncRead(
+            action="update",
+            repository_path=str(repository_path),
+            changed_files=["Le_Monde.json"],
+        ),
+    )
+    monkeypatch.setattr(
+        rss_sync_service_module,
+        "load_source_feeds_from_json",
+        lambda _: [
+            RssSourceFeedSchema(
+                url="https://example.com/rss/main",
+                title="Main",
+                tags=["tech"],
+                trust_score=0.9,
+                language="fr",
+                enabled=True,
+                img="icons/main.svg",
+                parsing_config={},
+            ),
+            RssSourceFeedSchema(
+                url="https://example.com/rss/ai",
+                title="AI",
+                tags=["ai"],
+                trust_score=0.8,
+                language="en",
+                enabled=True,
+                img="icons/ai.svg",
+                parsing_config={},
+            ),
+        ],
+    )
+    monkeypatch.setattr(
+        rss_sync_service_module,
+        "get_or_create_company",
+        lambda db, company_name: (SimpleNamespace(id=1), False),
+    )
+    monkeypatch.setattr(
+        rss_sync_service_module,
+        "get_or_create_tags",
+        lambda db, tag_names: ([object()], 0),
+    )
+
+    preloaded_existing_feed = object()
+    preload_calls: list[list[str]] = []
+
+    def fake_list_rss_feeds_by_urls(db, urls):
+        preload_calls.append(urls)
+        return {"https://example.com/rss/main": preloaded_existing_feed}
+
+    monkeypatch.setattr(
+        rss_sync_service_module,
+        "list_rss_feeds_by_urls",
+        fake_list_rss_feeds_by_urls,
+    )
+
+    received_existing_feeds: list[object | None] = []
+
+    def fake_upsert_feed(db, company, payload, tags, existing_feed=None):
+        received_existing_feeds.append(existing_feed)
+        created = existing_feed is None
+        return object(), created
+
+    monkeypatch.setattr(
+        rss_sync_service_module,
+        "upsert_feed",
+        fake_upsert_feed,
+    )
+    monkeypatch.setattr(
+        rss_sync_service_module,
+        "delete_company_feeds_not_in_urls",
+        lambda db, company_id, expected_urls: 0,
+    )
+
+    rss_sync_service_module.sync_rss_catalog(mock_db)
+
+    assert preload_calls == [
+        ["https://example.com/rss/main", "https://example.com/rss/ai"],
+    ]
+    assert received_existing_feeds == [preloaded_existing_feed, None]
+    mock_db.commit.assert_called_once()
 
 
 def test_sync_rss_catalog_rolls_back_on_parsing_error(monkeypatch, tmp_path) -> None:

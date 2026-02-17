@@ -11,6 +11,7 @@ from app.clients.database.rss import (
     get_company_by_name,
     get_or_create_company,
     get_or_create_tags,
+    list_rss_feeds_by_urls,
     upsert_feed,
 )
 from app.clients.networking.rss import (
@@ -92,20 +93,28 @@ def _sync_catalog_file(
         stats.created_companies += 1
 
     source_feeds = load_source_feeds_from_json(catalog_file_path)
-    expected_urls: set[str] = set()
+    upsert_payloads = [
+        normalize_source_feed_entry(source_feed)
+        for source_feed in source_feeds
+    ]
+    expected_urls = {upsert_payload.url for upsert_payload in upsert_payloads}
+    existing_feeds_by_url = list_rss_feeds_by_urls(
+        db=db,
+        urls=[upsert_payload.url for upsert_payload in upsert_payloads],
+    )
 
-    for source_feed in source_feeds:
-        upsert_payload = normalize_source_feed_entry(source_feed)
-        expected_urls.add(upsert_payload.url)
+    for upsert_payload in upsert_payloads:
         tags, created_tags = get_or_create_tags(db, upsert_payload.tags)
         stats.created_tags += created_tags
 
-        _, created_feed = upsert_feed(
+        feed, created_feed = upsert_feed(
             db=db,
             company=company,
             payload=upsert_payload,
             tags=tags,
+            existing_feed=existing_feeds_by_url.get(upsert_payload.url),
         )
+        existing_feeds_by_url[upsert_payload.url] = feed
         stats.processed_feeds += 1
         if created_feed:
             stats.created_feeds += 1

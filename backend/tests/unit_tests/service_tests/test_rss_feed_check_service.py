@@ -12,7 +12,7 @@ def test_check_rss_feeds_returns_empty_response_when_no_feed(monkeypatch) -> Non
     db = Mock(spec=Session)
     monkeypatch.setattr(
         rss_feed_check_service_module,
-        "list_rss_feeds_for_check",
+        "list_rss_feeds",
         lambda _db, feed_ids=None: [],
     )
 
@@ -45,7 +45,7 @@ def test_check_rss_feeds_returns_only_invalid_entries_in_results(monkeypatch) ->
     ]
     monkeypatch.setattr(
         rss_feed_check_service_module,
-        "list_rss_feeds_for_check",
+        "list_rss_feeds",
         lambda _db, feed_ids=None: feeds,
     )
 
@@ -94,7 +94,7 @@ def test_check_rss_feeds_rolls_back_when_commit_fails(monkeypatch) -> None:
     ]
     monkeypatch.setattr(
         rss_feed_check_service_module,
-        "list_rss_feeds_for_check",
+        "list_rss_feeds",
         lambda _db, feed_ids=None: feeds,
     )
 
@@ -133,7 +133,7 @@ def test_check_rss_feeds_reuses_same_http_client(monkeypatch) -> None:
     ]
     monkeypatch.setattr(
         rss_feed_check_service_module,
-        "list_rss_feeds_for_check",
+        "list_rss_feeds",
         lambda _db, feed_ids=None: feeds,
     )
 

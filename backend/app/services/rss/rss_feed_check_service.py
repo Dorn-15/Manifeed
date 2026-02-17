@@ -7,7 +7,7 @@ from typing import Optional
 import httpx
 from sqlalchemy.orm import Session
 
-from app.clients.database.rss import list_rss_feeds_for_check
+from app.clients.database.rss import list_rss_feeds
 from app.domain.rss import validate_rss_feed_payload
 from app.models.rss import RssFeed
 from app.schemas.rss import (
@@ -27,7 +27,7 @@ async def check_rss_feeds(
     feed_ids: Optional[list[int]] = None,
     max_concurrent: int = DEFAULT_MAX_CONCURRENT_CHECKS,
 ) -> RssFeedCheckRead:
-    feeds = list_rss_feeds_for_check(db, feed_ids=feed_ids)
+    feeds = list_rss_feeds(db, feed_ids=feed_ids)
     if not feeds:
         return RssFeedCheckRead()
 
