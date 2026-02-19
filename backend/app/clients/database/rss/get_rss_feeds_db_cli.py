@@ -98,7 +98,7 @@ def _rss_feed_read_select():
             RssFeed.enabled.label("enabled"),
             RssFeed.status.label("status"),
             RssFeed.trust_score.label("trust_score"),
-            RssFeed.language.label("language"),
+            RssFeed.country.label("country"),
             RssFeed.icon_url.label("icon_url"),
         )
         .select_from(RssFeed)

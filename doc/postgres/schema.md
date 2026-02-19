@@ -40,7 +40,7 @@ Indexes:
 | `enabled` | `BOOLEAN` | No | `true` | - |
 | `status` | `rss_feed_status` | No | `unchecked` | Enum constrained |
 | `trust_score` | `FLOAT` | No | `0.5` | Check (`ck_rss_feeds_trust_score`: `0.0 <= trust_score <= 1.0`) |
-| `language` | `CHAR(2)` | Yes | - | - |
+| `country` | `CHAR(2)` | Yes | - | - |
 | `icon_url` | `VARCHAR(500)` | Yes | - | - |
 | `parsing_config` | `JSONB` | No | `'{}'::jsonb` | - |
 | `last_update` | `TIMESTAMPTZ` | Yes | - | - |

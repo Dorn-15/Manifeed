@@ -63,7 +63,7 @@ def upgrade() -> None:
             nullable=False,
             server_default=sa.text("0.5"),
         ),
-        sa.Column("language", sa.CHAR(length=2), nullable=True),
+        sa.Column("country", sa.CHAR(length=2), nullable=True),
         sa.Column("icon_url", sa.String(length=500), nullable=True),
         sa.Column(
             "parsing_config",

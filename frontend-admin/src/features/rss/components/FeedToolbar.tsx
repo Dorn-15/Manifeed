@@ -42,7 +42,7 @@ export function FeedToolbar({
           id="rss-search"
           value={searchQuery}
           onChange={(event) => onSearchQueryChange(event.target.value)}
-          placeholder="URL, section, language, status..."
+          placeholder="URL, section, country, status..."
         />
       </Field>
 

@@ -25,11 +25,33 @@ def normalize_name_from_filename(file_name: str) -> str:
         raise ValueError(f"Could not derive name from file path: {file_name}")
     return normalized_name
 
-def normalize_language(language: str | None) -> str | None:
-    if language is None:
+def normalize_country(country: str | None) -> str | None:
+    if country is None:
         return None
 
-    normalized_language = language.strip().lower()
+    normalized_language = country.strip().lower()
     if not normalized_language:
         return None
     return normalized_language[:2]
+
+
+MAP_COUNTRY_TO_LANG = {
+    "au": "en",
+    "br": "pt",
+    "ca": "en",
+    "cn": "zh",
+    "de": "de",
+    "es": "es",
+    "en": "en",
+    "eu": "en",
+    "fr": "fr",
+    "gb": "en",
+    "hk": "en",
+    "it": "it",
+    "uk": "en",
+    "us": "en",
+    "wo": "en",
+}
+
+def normalize_lang_by_country(country: str | None) -> str | None:
+    return MAP_COUNTRY_TO_LANG.get(country) or None

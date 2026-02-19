@@ -11,5 +11,5 @@ class RssFeedRead(BaseModel):
     enabled: bool
     status: str
     trust_score: float
-    language: str | None = None
+    country: str | None = None
     icon_url: str | None = None

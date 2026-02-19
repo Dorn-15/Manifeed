@@ -78,7 +78,7 @@ def test_toggle_rss_feed_enabled_updates_feed_and_commits(monkeypatch) -> None:
         status="valid",
         trust_score=0.8,
         section="Tech",
-        language="en",
+        country="en",
         icon_url="leMonde/leMonde.svg",
         company_id=3,
         company_name="Le Monde",

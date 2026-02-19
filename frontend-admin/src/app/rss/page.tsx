@@ -342,7 +342,7 @@ export default function AdminRssPage() {
         return true;
       }
 
-      const searchable = [feed.url, feed.section, feed.language, feed.status]
+      const searchable = [feed.url, feed.section, feed.country, feed.status]
         .filter((value): value is string => Boolean(value))
         .join(" ")
         .toLowerCase();

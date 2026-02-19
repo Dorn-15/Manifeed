@@ -8,7 +8,7 @@ export type RssFeed = {
   enabled: boolean;
   status: string;
   trust_score: number;
-  language: string | null;
+  country: string | null;
   icon_url: string | null;
 };
 

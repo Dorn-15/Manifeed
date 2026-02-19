@@ -44,7 +44,7 @@ def test_get_rss_feed_read_by_id_returns_read_schema() -> None:
         "enabled": True,
         "status": "valid",
         "trust_score": 0.8,
-        "language": "en",
+        "country": "en",
         "icon_url": "leMonde/leMonde.svg",
     }
 

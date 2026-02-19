@@ -24,7 +24,7 @@ def test_load_source_feeds_from_json_parses_valid_payload(tmp_path: Path) -> Non
                     "title": "Tech",
                     "tags": ["tech", "digital"],
                     "trust_score": 0.9,
-                    "language": "en",
+                    "country": "en",
                     "enabled": True,
                     "img": "theVerge/theVerge.svg",
                 }

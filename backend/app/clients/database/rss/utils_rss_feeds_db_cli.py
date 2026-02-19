@@ -27,7 +27,7 @@ def upsert_feed(
             enabled=payload.enabled,
             status="unchecked",
             trust_score=payload.trust_score,
-            language=payload.language,
+            country=payload.country,
             icon_url=payload.icon_url,
             parsing_config=payload.parsing_config,
             tags=list(tags),
@@ -41,7 +41,7 @@ def upsert_feed(
     if existing_feed.status != "invalid":
         existing_feed.enabled = payload.enabled
     existing_feed.trust_score = payload.trust_score
-    existing_feed.language = payload.language
+    existing_feed.country = payload.country
     existing_feed.icon_url = payload.icon_url
     existing_feed.parsing_config = payload.parsing_config
     existing_feed.tags = list(tags)

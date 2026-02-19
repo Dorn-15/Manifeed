@@ -33,7 +33,7 @@ def test_list_rss_feeds_read_returns_read_schema() -> None:
             "enabled": True,
             "status": "unchecked",
             "trust_score": 0.95,
-            "language": "en",
+            "country": "en",
             "icon_url": "theVerge/theVerge.svg",
         }
     ]

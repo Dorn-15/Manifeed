@@ -4,7 +4,7 @@ from app.schemas.rss import (
     RssFeedUpsertSchema,
     RssSourceFeedSchema,
 )
-from app.utils import normalize_language
+from app.utils import normalize_country
 
 
 def normalize_source_feed_entry(source_feed: RssSourceFeedSchema) -> RssFeedUpsertSchema:
@@ -13,7 +13,7 @@ def normalize_source_feed_entry(source_feed: RssSourceFeedSchema) -> RssFeedUpse
         section=        _normalize_section(source_feed.title),
         enabled=        source_feed.enabled,
         trust_score=    source_feed.trust_score,
-        language=       normalize_language(source_feed.language),
+        country=       normalize_country(source_feed.country),
         icon_url=       _normalize_icon_url(source_feed.img),
         parsing_config= _normalize_parsing_config(source_feed.parsing_config),
         tags=           _normalize_tags(source_feed.tags),

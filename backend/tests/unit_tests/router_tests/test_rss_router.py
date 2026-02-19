@@ -40,7 +40,7 @@ def test_get_rss_route_returns_service_result(client, mock_db_session, monkeypat
             enabled=True,
             status="unchecked",
             trust_score=0.9,
-            language="en",
+            country="en",
             icon_url="theVerge/theVerge.svg",
         )
     ]
@@ -88,7 +88,7 @@ def test_patch_feed_enabled_route_returns_service_result(
         enabled=False,
         status="valid",
         trust_score=0.9,
-        language="en",
+        country="en",
         icon_url="theVerge/theVerge.svg",
     )
 

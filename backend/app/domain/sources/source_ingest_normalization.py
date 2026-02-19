@@ -5,7 +5,7 @@ from typing import Any
 import re
 
 from app.schemas.sources import RssSourceCandidateSchema
-from app.utils import normalize_language
+from app.utils import normalize_country
 
 _HTML_TAG_RE = re.compile(r"<[^>]+>")
 
@@ -16,7 +16,7 @@ def normalize_rss_source_candidates(
 ) -> list[RssSourceCandidateSchema]:
     candidates: list[RssSourceCandidateSchema] = []
     index = 0
-    normalized_default_language = normalize_language(default_language)
+    normalized_default_language = normalize_country(default_language)
 
     while index < len(entries):
         entry = entries[index]
@@ -44,7 +44,7 @@ def _normalize_rss_source_candidate(
 
     summary = _normalize_text(entry.get("summary"), strip_html=True, max_length=5000)
     image_url = _normalize_text(entry.get("image_url"), strip_html=False, max_length=1000)
-    language = normalize_language(_normalize_text(entry.get("language"), strip_html=False))
+    language = normalize_country(_normalize_text(entry.get("language"), strip_html=False))
     if language is None:
         language = default_language
 

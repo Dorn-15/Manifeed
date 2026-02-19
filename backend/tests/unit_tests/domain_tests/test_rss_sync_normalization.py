@@ -16,7 +16,7 @@ def test_normalize_source_feed_entry() -> None:
         title="  AI   Coverage ",
         tags=[" Tech ", "tech", "AI Trends"],
         trust_score=0.92,
-        language="EN",
+        country="EN",
         enabled=True,
         img="icons/ai.svg",
         parsing_config={"item_tag": "item"},
@@ -25,6 +25,6 @@ def test_normalize_source_feed_entry() -> None:
     normalized_feed = normalize_source_feed_entry(source_feed)
 
     assert normalized_feed.section == "AI Coverage"
-    assert normalized_feed.language == "en"
+    assert normalized_feed.country == "en"
     assert normalized_feed.tags == ["tech", "ai-trends"]
     assert normalized_feed.icon_url == "icons/ai.svg"

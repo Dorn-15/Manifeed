@@ -22,7 +22,7 @@ def test_get_rss_feeds_returns_database_reads(monkeypatch) -> None:
                 enabled=True,
                 status="unchecked",
                 trust_score=0.95,
-                language="en",
+                country="en",
                 icon_url="theVerge/theVerge.svg",
             )
         ],

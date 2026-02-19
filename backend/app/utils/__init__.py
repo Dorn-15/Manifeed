@@ -19,7 +19,8 @@ from .directory_utils import (
 from .normalize_utils import (
     normalize_file_extension,
     normalize_name_from_filename,
-    normalize_language,
+    normalize_country,
+    normalize_lang_by_country,
 )
 from .job_lock import (
     JobAlreadyRunning,
@@ -42,7 +43,8 @@ __all__ = [
     #normalize_utils
     "normalize_file_extension",
     "normalize_name_from_filename",
-    "normalize_language",
+    "normalize_country",
+    "normalize_lang_by_country",
     #job_lock
     "JobAlreadyRunning",
     "job_lock",

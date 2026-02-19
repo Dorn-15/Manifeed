@@ -60,7 +60,7 @@ class RssFeed(Base):
         nullable=False,
         server_default=sa.text("0.5"),
     )
-    language: Mapped[str | None] = mapped_column(sa.CHAR(2), nullable=True)
+    country: Mapped[str | None] = mapped_column(sa.CHAR(2), nullable=True)
     icon_url: Mapped[str | None] = mapped_column(sa.String(500), nullable=True)
     parsing_config: Mapped[dict[str, Any]] = mapped_column(
         postgresql.JSONB(astext_type=sa.Text()),

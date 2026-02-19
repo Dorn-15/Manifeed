@@ -23,7 +23,7 @@ export function FeedCard({ feed, toggling, onToggleEnabled }: FeedCardProps) {
   const trustPercent = getTrustPercent(feed.trust_score);
   const companyName = feed.company_name ?? "Unknown company";
   const section = feed.section ?? "No section";
-  const language = feed.language ?? "n/a";
+  const country = feed.country ?? "n/a";
   const companyDisabled = feed.company_enabled === false;
 
   return (
@@ -45,7 +45,7 @@ export function FeedCard({ feed, toggling, onToggleEnabled }: FeedCardProps) {
           <h3>{section}</h3>
           <div className={styles.metaRow}>
             <Badge className={styles.languagePill} tone="warning" uppercase>
-              {language}
+              {country}
             </Badge>
             <Badge className={styles.statusPill} tone="accent" uppercase>
               {feed.status}

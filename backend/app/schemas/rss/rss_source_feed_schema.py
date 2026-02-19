@@ -10,7 +10,7 @@ class RssSourceFeedSchema(BaseModel):
     title: str = Field(min_length=1)
     tags: list[str] = Field(default_factory=list)
     trust_score: float = Field(ge=0.0, le=1.0)
-    language: str | None = None
+    country: str | None = None
     enabled: bool = True
     img: str | None = Field(default=None, max_length=500)
     parsing_config: dict[str, Any] = Field(default_factory=dict)

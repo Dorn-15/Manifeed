@@ -30,7 +30,7 @@ FastAPI API server and database access layer for health and RSS workflows.
 - `GET /health/`
   - Returns `{"status": "ok|degraded", "database": "ok|unavailable"}`
 - `GET /rss/`
-  - Returns a list of RSS feeds (`id`, `url`, `company_name`, `section`, `enabled`, `status`, `trust_score`, `language`, `icon_url`)
+  - Returns a list of RSS feeds (`id`, `url`, `company_name`, `section`, `enabled`, `status`, `trust_score`, `country`, `icon_url`)
 - `POST /rss/sync`
   - Syncs RSS catalog from git repository and returns counters (`processed_files`, `processed_feeds`, `created_*`, `updated_feeds`, `deleted_feeds`)
 - `GET /rss/img/{icon_url:path}`

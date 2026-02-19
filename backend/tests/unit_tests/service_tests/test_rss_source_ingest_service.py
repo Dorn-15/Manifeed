@@ -32,9 +32,9 @@ def test_ingest_rss_sources_returns_empty_stats_when_no_feed(monkeypatch) -> Non
 
 def test_ingest_rss_sources_handles_success_skip_and_error(monkeypatch) -> None:
     mock_db = Mock(spec=Session)
-    feed_success = SimpleNamespace(id=1, url="https://example.com/rss/1", language="en", last_update=None)
-    feed_skip = SimpleNamespace(id=2, url="https://example.com/rss/2", language="en", last_update=None)
-    feed_error = SimpleNamespace(id=3, url="https://example.com/rss/3", language="en", last_update=None)
+    feed_success = SimpleNamespace(id=1, url="https://example.com/rss/1", country="uk", last_update=None)
+    feed_skip = SimpleNamespace(id=2, url="https://example.com/rss/2", country="uk", last_update=None)
+    feed_error = SimpleNamespace(id=3, url="https://example.com/rss/3", country="uk", last_update=None)
 
     monkeypatch.setattr(
         rss_source_ingest_service_module,

@@ -54,7 +54,7 @@ def test_rss_sync_endpoint_happy_path(
                 title="Main",
                 tags=["tech"],
                 trust_score=0.9,
-                language="fr",
+                country="fr",
                 enabled=True,
                 img="icons/main.svg",
                 parsing_config={},
@@ -137,7 +137,7 @@ def test_rss_list_endpoint_happy_path(client, monkeypatch) -> None:
                 enabled=True,
                 status="unchecked",
                 trust_score=0.95,
-                language="en",
+                country="en",
                 icon_url="theVerge/theVerge.svg",
             )
         ],
@@ -157,7 +157,7 @@ def test_rss_list_endpoint_happy_path(client, monkeypatch) -> None:
             enabled=True,
             status="unchecked",
             trust_score=0.95,
-            language="en",
+            country="en",
             icon_url="theVerge/theVerge.svg",
         ).model_dump()
     ]
@@ -197,7 +197,7 @@ def test_rss_toggle_feed_endpoint_happy_path(client, monkeypatch) -> None:
             enabled=True,
             status="valid",
             trust_score=0.95,
-            language="en",
+            country="en",
             icon_url="theVerge/theVerge.svg",
         ),
     )
@@ -244,7 +244,7 @@ def test_rss_toggle_feed_endpoint_returns_409_on_business_rule_violation(
             enabled=True,
             status="valid",
             trust_score=0.95,
-            language="en",
+            country="en",
             icon_url="theVerge/theVerge.svg",
         ),
     )
