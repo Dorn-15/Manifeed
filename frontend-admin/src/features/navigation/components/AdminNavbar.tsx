@@ -25,7 +25,7 @@ export function AdminNavbar() {
   return (
     <header className={styles.navbar}>
       <div className={styles.inner}>
-        <p className={styles.brand}>Manifeed Admin</p>
+        <p className={styles.brand}>Manifeed</p>
         <nav className={styles.links} aria-label="Admin navigation">
           {NAV_ITEMS.map((item) => {
             const active = isActiveRoute(pathname, item.href);

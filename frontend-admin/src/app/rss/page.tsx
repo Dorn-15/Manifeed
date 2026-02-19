@@ -9,7 +9,7 @@ import {
   type EnabledFilter,
   type SortMode,
 } from "@/features/rss/components/FeedToolbar";
-import { PopInfo, type PopInfoType } from "@/components/ui";
+import { PageHeader, PageShell, PopInfo, Surface, type PopInfoType } from "@/components";
 import { RssSyncPanel } from "@/features/rss/components/RssSyncPanel";
 import {
   checkRssFeeds,
@@ -126,7 +126,6 @@ export default function AdminRssPage() {
   const [syncing, setSyncing] = useState<boolean>(false);
   const [checking, setChecking] = useState<boolean>(false);
   const [popInfo, setPopInfo] = useState<PopInfoState | null>(null);
-  const [lastRefreshAt, setLastRefreshAt] = useState<string | null>(null);
 
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [enabledFilter, setEnabledFilter] = useState<EnabledFilter>("all");
@@ -147,7 +146,6 @@ export default function AdminRssPage() {
     try {
       const payload = await listRssFeeds();
       setFeeds(payload);
-      setLastRefreshAt(new Date().toISOString());
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Unexpected error while loading feeds";
@@ -356,21 +354,17 @@ export default function AdminRssPage() {
   }, [enabledFilter, searchQuery, selectedCompany, sortMode, statusFilter]);
 
   return (
-    <main className={styles.main}>
-      <header className={styles.header}>
-        <div>
-          <p className={styles.kicker}>Manifeed Admin</p>
-          <h1>RSS Company Workspace</h1>
-          <p>Select a company in the left panel, then inspect its feeds.</p>
-        </div>
-      </header>
+    <PageShell className={styles.main}>
+      <PageHeader
+        title="RSS Company Workspace"
+        description="Select a company in the left panel, then inspect its feeds."
+      />
 
       <RssSyncPanel
         syncing={syncing}
         checking={checking}
         loadingFeeds={loadingFeeds}
         feedCount={feeds.length}
-        lastRefreshAt={lastRefreshAt}
         onSync={handleSync}
         onCheck={handleCheck}
         onRefresh={loadFeeds}
@@ -387,7 +381,7 @@ export default function AdminRssPage() {
       ) : null}
 
       <section className={styles.workspace}>
-        <aside className={styles.companyPanel}>
+        <Surface as="aside" className={styles.companyPanel} padding="sm">
           <div className={styles.companyRail}>
             {companyGroups.map((company) => (
               <CompanyCard
@@ -400,7 +394,7 @@ export default function AdminRssPage() {
               />
             ))}
           </div>
-        </aside>
+        </Surface>
 
         <div className={styles.workspaceContent}>
           <FeedToolbar
@@ -430,6 +424,6 @@ export default function AdminRssPage() {
           />
         </div>
       </section>
-    </main>
+    </PageShell>
   );
 }

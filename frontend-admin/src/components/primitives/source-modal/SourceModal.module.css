@@ -1,0 +1,216 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 220;
+  background: rgb(7 13 27 / 0.74);
+  backdrop-filter: blur(2px);
+  display: grid;
+  place-items: center;
+  padding: var(--space-4);
+}
+
+.panel {
+  position: relative;
+  width: min(930px, 100%);
+  max-height: calc(100dvh - (var(--space-4) * 2));
+  overflow: auto;
+  border-radius: var(--radius-xl);
+  border-color: var(--border-subtle);
+  background: linear-gradient(180deg, rgb(5 11 31 / 0.98) 0%, rgb(4 8 22 / 1) 100%);
+  box-shadow: 0 24px 60px rgb(7 13 27 / 0.72);
+}
+
+.closeButton {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-4);
+  z-index: 4;
+  border-color: var(--color-white-7);
+  border-radius: var(--radius-pill);
+  background: rgb(7 13 27 / 0.72);
+  color: var(--text-primary);
+}
+
+.closeButton:hover:not(:disabled) {
+  transform: none;
+  border-color: var(--border-strong);
+  background: rgb(7 13 27 / 0.88);
+  color: var(--text-primary);
+}
+
+.statePanel {
+  padding: var(--space-9) var(--space-6) var(--space-6);
+  display: grid;
+  gap: var(--space-3);
+}
+
+.content {
+  display: grid;
+}
+
+.banner {
+  width: 100%;
+  aspect-ratio: 2 / 1;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--surface-panel-soft);
+  overflow: hidden;
+  position: relative;
+}
+
+.banner::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: 30%;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgb(7 13 27 / 0) 0%, rgb(7 13 27 / 0.34) 100%);
+}
+
+.banner img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.bannerFallback {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(
+    160deg,
+    rgb(125 157 255 / 0.22) 0%,
+    rgb(125 157 255 / 0.06) 100%
+  );
+}
+
+.bannerFallback span {
+  color: var(--text-accent);
+  font-size: clamp(2.4rem, 6vw, 4rem);
+  font-weight: var(--h2-weight);
+  line-height: 1;
+}
+
+.body {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-6);
+  background: linear-gradient(180deg, rgb(6 12 32 / 0.98) 0%, rgb(3 8 22 / 1) 100%);
+}
+
+.company {
+  margin: 0;
+  color: var(--text-accent);
+  font-size: var(--text-b-size);
+  font-weight: var(--text-b-weight);
+  line-height: var(--text-b-line-height);
+}
+
+.body h3 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: var(--h2-size);
+  font-weight: var(--h2-weight);
+  line-height: var(--h2-line-height);
+}
+
+.summary {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--text-r-size);
+  font-weight: var(--text-r-weight);
+  line-height: var(--text-r-line-height);
+}
+
+.sectionBlock {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.sectionBlock h4 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: var(--subtitle-r-size);
+  font-weight: var(--subtitle-r-weight);
+  line-height: var(--subtitle-r-line-height);
+}
+
+.sectionTags {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.sectionTags span {
+  border: 1px solid rgb(125 157 255 / 0.64);
+  border-radius: var(--radius-pill);
+  padding: 0.23rem 0.78rem;
+  background: rgb(125 157 255 / 0.08);
+  color: var(--text-secondary);
+  font-size: var(--button-r-size);
+  font-weight: var(--button-b-weight);
+  line-height: 1.2;
+}
+
+.footer {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.urlLink {
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: var(--text-r-size);
+  font-weight: var(--text-r-weight);
+  line-height: var(--text-r-line-height);
+  transition: color var(--motion-duration-fast) var(--motion-easing-standard);
+}
+
+.urlLink:hover {
+  color: var(--text-primary);
+}
+
+.publishedAt {
+  color: var(--text-accent);
+  font-size: var(--text-r-size);
+  font-weight: var(--text-r-weight);
+  line-height: var(--text-r-line-height);
+  white-space: nowrap;
+}
+
+.emptyText {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+@media (max-width: 720px) {
+  .backdrop {
+    padding: var(--space-2);
+  }
+
+  .panel {
+    width: 100%;
+    max-height: calc(100dvh - (var(--space-2) * 2));
+  }
+
+  .banner {
+    aspect-ratio: 16 / 11;
+  }
+
+  .closeButton {
+    top: var(--space-3);
+    right: var(--space-3);
+  }
+
+  .body {
+    gap: var(--space-2);
+  }
+
+  .footer {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-1);
+  }
+}

@@ -1,3 +1,5 @@
+import { Button, Surface } from "@/components";
+
 import styles from "./RssSyncPanel.module.css";
 
 type RssSyncPanelProps = {
@@ -5,7 +7,6 @@ type RssSyncPanelProps = {
   checking: boolean;
   loadingFeeds: boolean;
   feedCount: number;
-  lastRefreshAt: string | null;
   onSync: () => void;
   onCheck: () => void;
   onRefresh: () => void;
@@ -24,13 +25,12 @@ export function RssSyncPanel({
   checking,
   loadingFeeds,
   feedCount,
-  lastRefreshAt,
   onSync,
   onCheck,
   onRefresh,
 }: RssSyncPanelProps) {
   return (
-    <section className={styles.panel}>
+    <Surface className={styles.panel}>
       <div className={styles.header}>
         <div>
           <h2>Control actions</h2>
@@ -38,21 +38,20 @@ export function RssSyncPanel({
         </div>
         <div className={styles.meta}>
           <span>{feedCount} feeds</span>
-          <span>Last refresh {formatTimestamp(lastRefreshAt)}</span>
         </div>
       </div>
 
       <div className={styles.actions}>
-        <button className={styles.primaryButton} onClick={onSync} disabled={syncing}>
+        <Button variant="primary" onClick={onSync} disabled={syncing}>
           {syncing ? "Syncing..." : "Sync RSS"}
-        </button>
-        <button className={styles.secondaryButton} onClick={onCheck} disabled={checking}>
+        </Button>
+        <Button onClick={onCheck} disabled={checking}>
           {checking ? "Checking..." : "Check feeds"}
-        </button>
-        <button className={styles.secondaryButton} onClick={onRefresh} disabled={loadingFeeds}>
+        </Button>
+        <Button onClick={onRefresh} disabled={loadingFeeds}>
           {loadingFeeds ? "Refreshing..." : "Refresh feeds"}
-        </button>
+        </Button>
       </div>
-    </section>
+    </Surface>
   );
 }

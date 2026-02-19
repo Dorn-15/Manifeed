@@ -1,5 +1,5 @@
 import type { RssFeed } from "@/types/rss";
-import { EnabledToggle } from "@/components/ui";
+import { EmptyState, EnabledToggle, Notice, Surface } from "@/components";
 
 import { RssFeedGrid } from "./RssFeedGrid";
 import styles from "./FeedPanel.module.css";
@@ -33,33 +33,33 @@ export function FeedPanel({
 }: FeedPanelProps) {
   if (feedsError) {
     return (
-      <section className={styles.panel}>
-        <p className={styles.errorText}>Feed load error: {feedsError}</p>
-      </section>
+      <Surface className={styles.panel}>
+        <Notice tone="danger">Feed load error: {feedsError}</Notice>
+      </Surface>
     );
   }
 
   if (loadingFeeds) {
     return (
-      <section className={styles.panel}>
-        <p className={styles.loadingText}>Loading feed cards...</p>
-      </section>
+      <Surface className={styles.panel}>
+        <Notice className={styles.loadingNotice}>Loading feed cards...</Notice>
+      </Surface>
     );
   }
 
   if (!selectedCompanyName) {
     return (
-      <section className={styles.panel}>
-        <section className={styles.emptyState}>
-          <h2>No company detected</h2>
-          <p>Run a refresh or sync to load feeds.</p>
-        </section>
-      </section>
+      <Surface className={styles.panel}>
+        <EmptyState
+          title="No company detected"
+          description="Run a refresh or sync to load feeds."
+        />
+      </Surface>
     );
   }
 
   return (
-    <section className={styles.panel}>
+    <Surface className={styles.panel}>
       <header className={styles.header}>
         <div>
           <h2>{selectedCompanyName}</h2>
@@ -75,13 +75,13 @@ export function FeedPanel({
         ) : null}
       </header>
 
-      {toggleError ? <p className={styles.errorText}>Toggle error: {toggleError}</p> : null}
+      {toggleError ? <Notice tone="danger">Toggle error: {toggleError}</Notice> : null}
 
       <RssFeedGrid
         feeds={feeds}
         togglingFeedIds={togglingFeedIds}
         onToggleFeedEnabled={onToggleFeedEnabled}
       />
-    </section>
+    </Surface>
   );
 }

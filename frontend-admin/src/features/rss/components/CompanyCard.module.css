@@ -1,8 +1,8 @@
 .card {
-  border: 1px solid var(--glass-border);
-  background: rgba(125, 157, 255, 0.07);
-  backdrop-filter: blur(16px);
-  border-radius: 14px;
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-panel-muted);
+  backdrop-filter: blur(var(--effect-blur-md));
+  border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -10,7 +10,10 @@
   width: 100%;
   aspect-ratio: 1 / 1;
   padding: 0;
-  transition: border-color 0.2s ease, background 0.2s ease;
+  transition:
+    border-color var(--motion-duration-fast) var(--motion-easing-standard),
+    background-color var(--motion-duration-fast) var(--motion-easing-standard),
+    opacity var(--motion-duration-fast) var(--motion-easing-standard);
   overflow: hidden;
   opacity: 0.8;
 }
@@ -19,12 +22,12 @@
   width: auto;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.2s ease;
+  transition: transform var(--motion-duration-fast) var(--motion-easing-standard);
 }
 
 .card:hover {
-  border-color: var(--glass-border-strong);
-  background: rgba(125, 157, 255, 0.14);
+  border-color: var(--border-strong);
+  background: var(--color-heavenly-12);
   opacity: 1;
 }
 
@@ -35,8 +38,12 @@
 .cardSelected {
   opacity: 1;
   border: 3px solid;
-  border-color: rgba(125, 157, 255, 0.9);
-  background: rgba(125, 157, 255, 0.24);
-  box-shadow: 0 8px 20px rgba(8, 13, 24, 0.35);
+  border-color: var(--border-strong);
+  background: var(--color-heavenly-20);
+  box-shadow: var(--shadow-soft);
 }
 
+.card:focus-visible {
+  outline: none;
+  box-shadow: var(--effect-focus-ring);
+}

@@ -1,0 +1,37 @@
+.surface {
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--effect-elevation-soft);
+}
+
+.blur {
+  backdrop-filter: blur(var(--effect-blur-md));
+}
+
+.tone_default {
+  background: var(--surface-panel);
+}
+
+.tone_soft {
+  background: var(--surface-panel-soft);
+}
+
+.tone_gradient {
+  background: linear-gradient(160deg, var(--surface-panel) 0%, var(--color-ebony-100) 100%);
+}
+
+.padding_none {
+  padding: 0;
+}
+
+.padding_sm {
+  padding: var(--space-3);
+}
+
+.padding_md {
+  padding: var(--space-4);
+}
+
+.padding_lg {
+  padding: var(--space-5);
+}

@@ -1,3 +1,4 @@
+import { Badge, Surface } from "@/components";
 import type { HealthRead } from "@/types/health";
 
 import styles from "./HealthStatusCard.module.css";
@@ -11,12 +12,12 @@ export function HealthStatusCard({ statusText, health }: HealthStatusCardProps) 
   const isHealthy = statusText.toLowerCase() === "ok";
 
   return (
-    <section className={styles.card}>
+    <Surface className={styles.card} padding="lg">
       <header className={styles.header}>
         <h2>Backend Health</h2>
-        <span className={isHealthy ? styles.statusPillHealthy : styles.statusPillWarning}>
+        <Badge tone={isHealthy ? "success" : "warning"} uppercase>
           {isHealthy ? "Stable" : "Check"}
-        </span>
+        </Badge>
       </header>
 
       <div className={styles.grid}>
@@ -29,6 +30,6 @@ export function HealthStatusCard({ statusText, health }: HealthStatusCardProps) 
           <strong>{health?.database ?? "unknown"}</strong>
         </article>
       </div>
-    </section>
+    </Surface>
   );
 }

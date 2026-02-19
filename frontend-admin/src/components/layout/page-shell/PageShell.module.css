@@ -1,0 +1,22 @@
+.shell {
+  --shell-gap: var(--space-4);
+  width: min(var(--layout-max-width), calc(100% - (var(--layout-page-padding) * 2)));
+  margin: 0 auto;
+  padding: var(--space-5) 0 var(--space-9);
+  display: grid;
+  gap: var(--shell-gap);
+}
+
+.size_default {
+  --layout-max-width: var(--layout-content-max);
+}
+
+.size_wide {
+  --layout-max-width: var(--layout-content-max-wide);
+}
+
+@media (max-width: 900px) {
+  .shell {
+    padding-top: var(--space-4);
+  }
+}

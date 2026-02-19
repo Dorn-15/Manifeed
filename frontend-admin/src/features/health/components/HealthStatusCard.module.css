@@ -1,71 +1,44 @@
 .card {
-  border: 1px solid var(--glass-border);
-  background: var(--glass);
-  backdrop-filter: blur(16px);
-  border-radius: 18px;
-  padding: 1.25rem;
-  box-shadow: var(--shadow-soft);
+  display: grid;
+  gap: var(--space-4);
 }
 
 .header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  gap: 0.5rem;
+  align-items: flex-start;
+  gap: var(--space-2);
 }
 
 .header h2 {
   margin: 0;
-  font-size: 1.4rem;
-}
-
-.statusPillHealthy,
-.statusPillWarning {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.25rem 0.62rem;
-  border-radius: 999px;
-  font-size: 0.78rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  border: 1px solid;
-}
-
-.statusPillHealthy {
-  color: var(--accent-soft);
-  background: rgba(125, 157, 255, 0.17);
-  border-color: rgba(125, 157, 255, 0.56);
-}
-
-.statusPillWarning {
-  color: #ffd1a6;
-  background: rgba(255, 159, 74, 0.16);
-  border-color: rgba(255, 159, 74, 0.52);
 }
 
 .grid {
-  margin-top: 1rem;
   display: grid;
-  gap: 0.7rem;
+  gap: var(--space-3);
   grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
 }
 
 .metric {
   margin: 0;
-  border: 1px solid rgba(177, 195, 244, 0.24);
-  border-radius: 12px;
-  background: rgba(125, 157, 255, 0.08);
-  padding: 0.76rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--surface-panel-soft);
+  padding: var(--space-3);
   display: grid;
-  gap: 0.3rem;
+  gap: var(--space-1);
 }
 
 .metric span {
-  font-size: 0.82rem;
-  color: var(--text-soft);
+  font-size: var(--text-r-size);
+  font-weight: var(--text-r-weight);
+  line-height: var(--text-r-line-height);
+  color: var(--text-secondary-strong);
 }
 
 .metric strong {
-  font-size: 1rem;
+  font-size: var(--text-b-size);
+  font-weight: var(--text-b-weight);
+  line-height: var(--text-b-line-height);
 }

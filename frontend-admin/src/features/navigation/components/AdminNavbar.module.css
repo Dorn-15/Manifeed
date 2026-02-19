@@ -2,64 +2,75 @@
   position: sticky;
   top: 0;
   z-index: 120;
-  border-bottom: 1px solid var(--glass-border);
-  background: rgba(7, 13, 27, 0.86);
-  backdrop-filter: blur(15px);
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--color-navy-84);
+  backdrop-filter: blur(var(--effect-blur-sm));
 }
 
 .inner {
-  width: min(1320px, 100% - 2.4rem);
+  width: min(var(--layout-content-max), calc(100% - (var(--layout-page-padding) * 2)));
   margin: 0 auto;
   min-height: var(--admin-navbar-height);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
+  gap: var(--space-4);
 }
 
 .brand {
   margin: 0;
-  font-size: 0.82rem;
+  font-size: var(--subtitle-b-size);
+  font-weight: var(--subtitle-b-weight);
+  line-height: var(--subtitle-b-line-height);
   letter-spacing: 0.11em;
   text-transform: uppercase;
-  color: var(--text-soft);
+  color: var(--text-secondary-strong);
 }
 
 .links {
   display: flex;
   align-items: center;
-  gap: 0.55rem;
+  gap: var(--space-2);
 }
 
 .link {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   border: 1px solid transparent;
-  color: var(--text-muted);
-  padding: 0.36rem 0.72rem;
-  font-size: 0.86rem;
-  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  color: var(--text-secondary);
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--button-r-size);
+  font-weight: var(--button-r-weight);
+  line-height: var(--button-r-line-height);
+  transition:
+    background-color var(--motion-duration-fast) var(--motion-easing-standard),
+    border-color var(--motion-duration-fast) var(--motion-easing-standard),
+    color var(--motion-duration-fast) var(--motion-easing-standard);
 }
 
 .link:hover {
-  color: var(--text-main);
-  border-color: var(--glass-border-strong);
-  background: rgba(125, 157, 255, 0.11);
+  color: var(--text-primary);
+  border-color: var(--border-strong);
+  background: var(--color-heavenly-12);
+}
+
+.link:focus-visible {
+  outline: none;
+  box-shadow: var(--effect-focus-ring);
 }
 
 .linkActive {
-  color: var(--text-main);
-  border-color: rgba(125, 157, 255, 0.74);
-  background: rgba(125, 157, 255, 0.2);
+  color: var(--text-primary);
+  border-color: var(--border-strong);
+  background: var(--color-heavenly-20);
 }
 
 @media (max-width: 860px) {
   .inner {
-    width: min(1320px, 100% - 1.4rem);
     min-height: 56px;
     flex-wrap: wrap;
-    padding: 0.45rem 0;
+    padding: var(--space-2) 0;
   }
 }

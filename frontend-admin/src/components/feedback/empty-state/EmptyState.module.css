@@ -1,0 +1,18 @@
+.emptyState {
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-panel-soft);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+}
+
+.emptyState h2 {
+  margin: 0;
+}
+
+.emptyState p {
+  margin: var(--space-2) 0 0;
+  color: var(--text-secondary);
+  font-size: var(--text-r-size);
+  font-weight: var(--text-r-weight);
+  line-height: var(--text-r-line-height);
+}

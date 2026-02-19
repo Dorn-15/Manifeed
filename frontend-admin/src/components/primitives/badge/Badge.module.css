@@ -1,0 +1,46 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-pill);
+  padding: 0.22rem 0.56rem;
+  border: 1px solid;
+  font-size: var(--button-r-size);
+  font-weight: var(--button-r-weight);
+  line-height: var(--button-r-line-height);
+  letter-spacing: 0.06em;
+}
+
+.uppercase {
+  text-transform: uppercase;
+}
+
+.tone_neutral {
+  color: var(--text-secondary-strong);
+  border-color: var(--border-subtle);
+  background: var(--surface-panel-soft);
+}
+
+.tone_accent {
+  color: var(--color-heavenly-100);
+  border-color: var(--border-strong);
+  background: var(--color-heavenly-12);
+}
+
+.tone_success {
+  color: var(--status-success);
+  border-color: var(--border-strong);
+  background: var(--color-heavenly-12);
+}
+
+.tone_warning {
+  color: var(--status-warning);
+  border-color: var(--color-complementary-70);
+  background: var(--color-complementary-12);
+}
+
+.tone_danger {
+  color: var(--status-alert);
+  border-color: var(--color-complementary-70);
+  background: var(--color-complementary-12);
+}

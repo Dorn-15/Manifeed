@@ -1,6 +1,6 @@
 import { buildRssIconUrl } from "@/services/api/rss.service";
 import type { RssFeed } from "@/types/rss";
-import { EnabledToggle } from "@/components/ui";
+import { Badge, EnabledToggle, Surface } from "@/components";
 
 import styles from "./FeedCard.module.css";
 
@@ -27,7 +27,7 @@ export function FeedCard({ feed, toggling, onToggleEnabled }: FeedCardProps) {
   const companyDisabled = feed.company_enabled === false;
 
   return (
-    <article className={styles.card}>
+    <Surface as="article" className={styles.card} tone="gradient">
       <div className={styles.identity}>
         <div className={styles.iconWrap}>
           {iconUrl ? (
@@ -44,8 +44,12 @@ export function FeedCard({ feed, toggling, onToggleEnabled }: FeedCardProps) {
         <div className={styles.sectionInfo}>
           <h3>{section}</h3>
           <div className={styles.metaRow}>
-            <span className={styles.languagePill}>{language}</span>
-            <span className={styles.statusPill}>{feed.status}</span>
+            <Badge className={styles.languagePill} tone="warning" uppercase>
+              {language}
+            </Badge>
+            <Badge className={styles.statusPill} tone="accent" uppercase>
+              {feed.status}
+            </Badge>
           </div>
         </div>
         <div className={styles.controls}>
@@ -71,6 +75,6 @@ export function FeedCard({ feed, toggling, onToggleEnabled }: FeedCardProps) {
       <a href={feed.url} target="_blank" rel="noreferrer" className={styles.urlLink}>
         {feed.url}
       </a>
-    </article>
+    </Surface>
   );
 }

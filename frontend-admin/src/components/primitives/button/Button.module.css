@@ -1,0 +1,86 @@
+.button {
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2) var(--space-4);
+  cursor: pointer;
+  color: var(--text-primary);
+  font-size: var(--button-b-size);
+  font-weight: var(--button-b-weight);
+  line-height: var(--button-b-line-height);
+  transition:
+    transform var(--motion-duration-fast) var(--motion-easing-standard),
+    border-color var(--motion-duration-fast) var(--motion-easing-standard),
+    background-color var(--motion-duration-fast) var(--motion-easing-standard),
+    color var(--motion-duration-fast) var(--motion-easing-standard);
+}
+
+.button:hover:not(:disabled) {
+  transform: var(--motion-hover-lift);
+}
+
+.button:focus-visible {
+  outline: none;
+  box-shadow: var(--effect-focus-ring);
+}
+
+.button:disabled {
+  opacity: 0.58;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.size_sm {
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--button-r-size);
+  font-weight: var(--button-r-weight);
+  line-height: var(--button-r-line-height);
+}
+
+.size_md {
+  padding: var(--space-2) var(--space-4);
+}
+
+.variant_primary {
+  background: linear-gradient(
+    135deg,
+    var(--color-heavenly-100) 0%,
+    var(--color-heavenly-70) 100%
+  );
+  color: var(--text-on-accent);
+}
+
+.variant_secondary {
+  background: var(--surface-panel-muted);
+}
+
+.variant_ghost {
+  border-color: var(--border-subtle);
+  color: var(--text-secondary);
+  background: transparent;
+}
+
+.variant_ghost:hover:not(:disabled) {
+  color: var(--text-primary);
+  border-color: var(--border-strong);
+  background: var(--surface-panel-soft);
+}
+
+.variant_chip {
+  border-radius: var(--radius-pill);
+  background: var(--surface-panel-muted);
+  text-transform: capitalize;
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--button-r-size);
+  font-weight: var(--button-r-weight);
+  line-height: var(--button-r-line-height);
+}
+
+.active {
+  border-color: var(--border-strong);
+  background: var(--color-heavenly-20);
+  color: var(--text-primary);
+}
+
+.fullWidth {
+  width: 100%;
+}

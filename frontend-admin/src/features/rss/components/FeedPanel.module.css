@@ -1,56 +1,28 @@
 .panel {
-  border: 1px solid var(--glass-border);
-  background: var(--glass-strong);
-  border-radius: 18px;
-  padding: 0.95rem;
   display: grid;
-  gap: 0.9rem;
-  box-shadow: var(--shadow-soft);
+  gap: var(--space-4);
 }
 
 .header {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.6rem;
+  gap: var(--space-3);
   justify-content: space-between;
   align-items: center;
 }
 
 .header h2 {
   margin: 0;
-  font-size: 1.2rem;
 }
 
 .header p {
   margin: 0;
-  color: var(--text-soft);
-  font-size: 0.85rem;
+  color: var(--text-secondary-strong);
+  font-size: var(--text-r-size);
+  font-weight: var(--text-r-weight);
+  line-height: var(--text-r-line-height);
 }
 
-.emptyState {
-  border: 1px solid var(--glass-border);
-  background: rgba(125, 157, 255, 0.08);
-  border-radius: 14px;
-  padding: 1rem;
-}
-
-.emptyState h2 {
-  margin: 0;
-  font-size: 1.1rem;
-}
-
-.emptyState p {
-  margin: 0.4rem 0 0;
-  color: var(--text-muted);
-}
-
-.errorText {
-  margin: 0;
-  color: var(--danger);
-  font-weight: 600;
-}
-
-.loadingText {
-  margin: 0;
-  color: var(--text-muted);
+.loadingNotice {
+  color: var(--text-secondary);
 }

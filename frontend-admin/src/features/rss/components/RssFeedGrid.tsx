@@ -1,4 +1,5 @@
 import type { RssFeed } from "@/types/rss";
+import { EmptyState } from "@/components";
 
 import { FeedCard } from "./FeedCard";
 import styles from "./RssFeedGrid.module.css";
@@ -11,12 +12,7 @@ type RssFeedGridProps = {
 
 export function RssFeedGrid({ feeds, togglingFeedIds, onToggleFeedEnabled }: RssFeedGridProps) {
   if (feeds.length === 0) {
-    return (
-      <section className={styles.emptyState}>
-        <h2>No matching feeds</h2>
-        <p>Adjust the filters for the selected company.</p>
-      </section>
-    );
+    return <EmptyState title="No matching feeds" description="Adjust the filters for the selected company." />;
   }
 
   return (

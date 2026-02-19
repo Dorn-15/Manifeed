@@ -1,0 +1,104 @@
+.card {
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: linear-gradient(160deg, var(--surface-panel) 0%, var(--color-ebony-100) 100%);
+  width: 100%;
+  padding: 0;
+  cursor: pointer;
+  display: grid;
+  overflow: hidden;
+  text-align: left;
+  transition:
+    transform var(--motion-duration-fast) var(--motion-easing-standard),
+    border-color var(--motion-duration-fast) var(--motion-easing-standard);
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  border-color: var(--border-strong);
+}
+
+.card:focus-visible {
+  outline: none;
+  box-shadow: var(--effect-focus-ring);
+}
+
+.banner {
+  width: 100%;
+  aspect-ratio: 2 / 1;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--surface-panel-soft);
+  overflow: hidden;
+}
+
+.banner img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.bannerFallback {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(
+    160deg,
+    var(--color-heavenly-20) 0%,
+    var(--color-heavenly-0) 100%
+  );
+}
+
+.bannerFallback span {
+  color: var(--color-heavenly-70);
+  font-size: var(--h2-size);
+  font-weight: var(--h2-weight);
+  line-height: var(--h2-line-height);
+}
+
+.body {
+  padding: var(--space-3);
+  display: grid;
+  gap: var(--space-2);
+}
+
+.body h3 {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  color: var(--text-primary);
+}
+
+.company {
+  margin: 0;
+  color: var(--text-accent);
+  font-size: var(--text-r-size);
+  font-weight: var(--text-r-weight);
+  line-height: var(--text-r-line-height);
+}
+
+.summary {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--text-r-size);
+  font-weight: var(--text-r-weight);
+  line-height: var(--text-r-line-height);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+
+.publishedAt {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--text-accent);
+  font-size: var(--text-r-size);
+  font-weight: var(--text-r-weight);
+  line-height: var(--text-r-line-height);
+}

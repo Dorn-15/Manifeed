@@ -1,3 +1,5 @@
+import { Button, Field, SelectInput, Surface, TextInput } from "@/components";
+
 import styles from "./FeedToolbar.module.css";
 
 export type EnabledFilter = "all" | "enabled" | "disabled";
@@ -34,42 +36,37 @@ export function FeedToolbar({
   onSortModeChange,
 }: FeedToolbarProps) {
   return (
-    <section className={styles.toolbar}>
-      <div className={styles.filterField}>
-        <label htmlFor="rss-search">Search selected company</label>
-        <input
+    <Surface className={styles.toolbar}>
+      <Field label="Search selected company" htmlFor="rss-search">
+        <TextInput
           id="rss-search"
           value={searchQuery}
           onChange={(event) => onSearchQueryChange(event.target.value)}
           placeholder="URL, section, language, status..."
         />
-      </div>
+      </Field>
 
       <div className={styles.filterRow}>
         <div className={styles.filterGroup}>
           <span className={styles.filterLabel}>Enabled</span>
           <div className={styles.filterButtons}>
             {ENABLED_FILTERS.map((filterValue) => (
-              <button
+              <Button
                 key={filterValue}
-                className={
-                  enabledFilter === filterValue
-                    ? `${styles.filterButton} ${styles.filterButtonActive}`
-                    : styles.filterButton
-                }
+                variant="chip"
+                size="sm"
+                active={enabledFilter === filterValue}
                 onClick={() => onEnabledFilterChange(filterValue)}
-                type="button"
               >
                 {filterValue}
-              </button>
+              </Button>
             ))}
           </div>
         </div>
 
         <div className={styles.inlineFields}>
-          <label htmlFor="rss-status">
-            Status
-            <select
+          <Field label="Status" htmlFor="rss-status" className={styles.inlineField}>
+            <SelectInput
               id="rss-status"
               value={statusFilter}
               onChange={(event) => onStatusFilterChange(event.target.value)}
@@ -78,13 +75,12 @@ export function FeedToolbar({
                 <option key={statusOption} value={statusOption}>
                   {statusOption}
                 </option>
-              ))}
-            </select>
-          </label>
+                ))}
+            </SelectInput>
+          </Field>
 
-          <label htmlFor="rss-sort">
-            Sort by
-            <select
+          <Field label="Sort by" htmlFor="rss-sort" className={styles.inlineField}>
+            <SelectInput
               id="rss-sort"
               value={sortMode}
               onChange={(event) => {
@@ -100,10 +96,10 @@ export function FeedToolbar({
               <option value="trust_asc">Trust low to high</option>
               <option value="url_asc">URL A to Z</option>
               <option value="url_desc">URL Z to A</option>
-            </select>
-          </label>
+            </SelectInput>
+          </Field>
         </div>
       </div>
-    </section>
+    </Surface>
   );
 }

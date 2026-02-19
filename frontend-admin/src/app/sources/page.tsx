@@ -2,7 +2,19 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import { PopInfo, type PopInfoType } from "@/components/ui";
+import {
+  Button,
+  Field,
+  Notice,
+  PageHeader,
+  PageShell,
+  PopInfo,
+  SelectInput,
+  SourceCard,
+  SourceModal,
+  Surface,
+  type PopInfoType,
+} from "@/components";
 import { listRssFeeds } from "@/services/api/rss.service";
 import {
   getRssSourceById,
@@ -32,20 +44,6 @@ type PopInfoState = {
   type: PopInfoType;
 };
 
-function formatTimestamp(isoDate: string | null): string {
-  if (!isoDate) {
-    return "never";
-  }
-  return new Date(isoDate).toLocaleString();
-}
-
-function formatSourceDate(isoDate: string | null): string {
-  if (!isoDate) {
-    return "n/a";
-  }
-  return new Date(isoDate).toLocaleString();
-}
-
 function formatIngestSummary(result: RssSourceIngestRead): string {
   const summary = [
     `processed=${result.feeds_processed}`,
@@ -67,10 +65,6 @@ function formatIngestSummary(result: RssSourceIngestRead): string {
   return `${summary} | ${preview}`;
 }
 
-function getSourceCompanyName(companyName: string | null): string {
-  return companyName ?? "Unknown company";
-}
-
 function getFeedLabel(feed: RssFeed): string {
   const companyName = feed.company_name ?? "Unknown company";
   const section = feed.section ? ` / ${feed.section}` : "";
@@ -90,7 +84,6 @@ export default function AdminSourcesPage() {
   const [sourcesError, setSourcesError] = useState<string | null>(null);
   const [filtersError, setFiltersError] = useState<string | null>(null);
   const [ingestingSources, setIngestingSources] = useState<boolean>(false);
-  const [lastRefreshAt, setLastRefreshAt] = useState<string | null>(null);
   const [selectedFeedId, setSelectedFeedId] = useState<number | null>(null);
   const [selectedCompanyId, setSelectedCompanyId] = useState<number | null>(null);
   const [popInfo, setPopInfo] = useState<PopInfoState | null>(null);
@@ -129,7 +122,6 @@ export default function AdminSourcesPage() {
           companyId: selectedCompanyId,
         });
         setSourcesPage(payload);
-        setLastRefreshAt(new Date().toISOString());
       } catch (error) {
         const message =
           error instanceof Error ? error.message : "Unexpected error while loading sources";
@@ -345,37 +337,33 @@ export default function AdminSourcesPage() {
   }, []);
 
   return (
-    <main className={styles.main}>
-      <header className={styles.header}>
-        <div>
-          <p className={styles.kicker}>Manifeed Admin</p>
-          <h1>Sources Workspace</h1>
-          <p>Filter sources by feed or company, then inspect each source details.</p>
-        </div>
-      </header>
+    <PageShell className={styles.main}>
+      <PageHeader
+        title="Sources Workspace"
+        description="Filter sources by feed or company, then inspect each source details."
+      />
 
-      <section className={styles.actionPanel}>
+      <Surface className={styles.actionPanel}>
         <div className={styles.meta}>
-          <strong>{sourcesPage.total}</strong>
-          <span>sources</span>
-          <span>Last refresh {formatTimestamp(lastRefreshAt)}</span>
+          <div className={styles.metaCount}>
+            <strong>{sourcesPage.total}</strong>
+            <span>source{sourcesPage.total !== 1 ? "s" : ""}</span>
+          </div>
         </div>
         <div className={styles.actions}>
-          <button className={styles.primaryButton} onClick={handleIngest} disabled={ingestingSources}>
+          <Button variant="primary" onClick={handleIngest} disabled={ingestingSources}>
             {ingestingSources ? "Ingesting..." : "Ingest sources"}
-          </button>
-          <button className={styles.secondaryButton} onClick={handleRefresh} disabled={loadingSources}>
+          </Button>
+          <Button onClick={handleRefresh} disabled={loadingSources}>
             {loadingSources ? "Refreshing..." : "Refresh"}
-          </button>
+          </Button>
         </div>
-      </section>
+      </Surface>
 
-      <section className={styles.filterPanel}>
-        <div className={styles.filterField}>
-          <label htmlFor="source-feed-filter">Filter by feed</label>
-          <select
+      <Surface className={styles.filterPanel}>
+        <Field className={styles.filterField} label="Filter by feed" htmlFor="source-feed-filter">
+          <SelectInput
             id="source-feed-filter"
-            className={styles.selectInput}
             value={selectedFeedId ?? ""}
             onChange={(event) => handleFeedFilterChange(event.target.value)}
             disabled={loadingFilters}
@@ -386,14 +374,12 @@ export default function AdminSourcesPage() {
                 {getFeedLabel(feed)}
               </option>
             ))}
-          </select>
-        </div>
+          </SelectInput>
+        </Field>
 
-        <div className={styles.filterField}>
-          <label htmlFor="source-company-filter">Filter by company</label>
-          <select
+        <Field className={styles.filterField} label="Filter by company" htmlFor="source-company-filter">
+          <SelectInput
             id="source-company-filter"
-            className={styles.selectInput}
             value={selectedCompanyId ?? ""}
             onChange={(event) => handleCompanyFilterChange(event.target.value)}
             disabled={loadingFilters}
@@ -404,13 +390,13 @@ export default function AdminSourcesPage() {
                 {company.name}
               </option>
             ))}
-          </select>
-        </div>
+          </SelectInput>
+        </Field>
 
-        <button className={styles.secondaryButton} onClick={clearFilters} disabled={loadingFilters}>
+        <Button className={styles.clearFiltersButton} onClick={clearFilters} disabled={loadingFilters}>
           Clear filters
-        </button>
-      </section>
+        </Button>
+      </Surface>
 
       {popInfo ? (
         <PopInfo
@@ -422,157 +408,56 @@ export default function AdminSourcesPage() {
         />
       ) : null}
 
-      {filtersError ? <p className={styles.errorText}>Filter load error: {filtersError}</p> : null}
-      {sourcesError ? <p className={styles.errorText}>Source load error: {sourcesError}</p> : null}
+      {filtersError ? <Notice tone="danger">Filter load error: {filtersError}</Notice> : null}
+      {sourcesError ? <Notice tone="danger">Source load error: {sourcesError}</Notice> : null}
 
-      <section className={styles.gridPanel}>
+      <Surface className={styles.gridPanel}>
         <div className={styles.gridHeader}>
-          <h2>Source tiles</h2>
+          <h2>Sources</h2>
           <p>
             Showing {startIndex}-{endIndex} of {sourcesPage.total}
           </p>
         </div>
 
         {loadingSources ? (
-          <p className={styles.emptyText}>Loading sources...</p>
+          <Notice className={styles.emptyText}>Loading sources...</Notice>
         ) : sourcesPage.items.length === 0 ? (
-          <p className={styles.emptyText}>No source available for this filter.</p>
+          <Notice className={styles.emptyText}>No source available for this filter.</Notice>
         ) : (
           <div className={styles.tileGrid}>
             {sourcesPage.items.map((source) => (
-              <button
+              <SourceCard
                 key={source.id}
-                type="button"
-                className={styles.tileCard}
-                onClick={() => handleTileClick(source.id)}
-              >
-                <div className={styles.tileBanner}>
-                  {source.image_url ? (
-                    <img src={source.image_url} alt={source.title} loading="lazy" decoding="async" />
-                  ) : (
-                    <div className={styles.tileBannerFallback}>
-                      <span>{getSourceCompanyName(source.company_name).slice(0, 1)}</span>
-                    </div>
-                  )}
-                </div>
-
-                <div className={styles.tileBody}>
-                  <h3>{source.title}</h3>
-                  <p className={styles.tileCompany}>{getSourceCompanyName(source.company_name)}</p>
-                  <p className={styles.tileSummary}>{source.summary ?? "No summary available."}</p>
-                  <p className={styles.publishedAt}>Published {formatSourceDate(source.published_at)}</p>
-                </div>
-              </button>
+                sourceId={source.id}
+                title={source.title}
+                summary={source.summary}
+                imageUrl={source.image_url}
+                companyName={source.company_name}
+                publishedAt={source.published_at}
+                onClick={handleTileClick}
+              />
             ))}
           </div>
         )}
 
         <div className={styles.pagination}>
-          <button
-            className={styles.secondaryButton}
-            onClick={handlePreviousPage}
-            disabled={!hasPreviousPage || loadingSources}
-          >
+          <Button onClick={handlePreviousPage} disabled={!hasPreviousPage || loadingSources}>
             Previous
-          </button>
-          <button
-            className={styles.secondaryButton}
-            onClick={handleNextPage}
-            disabled={!hasNextPage || loadingSources}
-          >
+          </Button>
+          <Button onClick={handleNextPage} disabled={!hasNextPage || loadingSources}>
             Next
-          </button>
+          </Button>
         </div>
-      </section>
+      </Surface>
 
       {selectedSourceId !== null ? (
-        <div
-          className={styles.modalBackdrop}
-          role="presentation"
-          onClick={(event) => {
-            if (event.target === event.currentTarget) {
-              closeSourceDetail();
-            }
-          }}
-        >
-          <section
-            className={styles.modalPanel}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="source-detail-title"
-          >
-            <button type="button" className={styles.modalCloseButton} onClick={closeSourceDetail}>
-              Close
-            </button>
-
-            {loadingSourceDetail ? <p className={styles.emptyText}>Loading source detail...</p> : null}
-            {sourceDetailError ? (
-              <p className={styles.errorText}>Source detail error: {sourceDetailError}</p>
-            ) : null}
-
-            {!loadingSourceDetail && !sourceDetailError && selectedSourceDetail ? (
-              <article className={styles.modalContent}>
-                <div className={styles.modalBanner}>
-                  {selectedSourceDetail.image_url ? (
-                    <img
-                      src={selectedSourceDetail.image_url}
-                      alt={selectedSourceDetail.title}
-                      loading="lazy"
-                      decoding="async"
-                    />
-                  ) : (
-                    <div className={styles.tileBannerFallback}>
-                      <span>{getSourceCompanyName(selectedSourceDetail.company_name).slice(0, 1)}</span>
-                    </div>
-                  )}
-                </div>
-
-                <h3 id="source-detail-title">{selectedSourceDetail.title}</h3>
-                <p className={styles.modalCompany}>
-                  {getSourceCompanyName(selectedSourceDetail.company_name)}
-                </p>
-
-                <dl className={styles.modalMeta}>
-                  <div>
-                    <dt>ID</dt>
-                    <dd>{selectedSourceDetail.id}</dd>
-                  </div>
-                  <div>
-                    <dt>Published</dt>
-                    <dd>{formatSourceDate(selectedSourceDetail.published_at)}</dd>
-                  </div>
-                </dl>
-
-                <p className={styles.modalSummary}>
-                  {selectedSourceDetail.summary ?? "No summary available."}
-                </p>
-
-                <section className={styles.sectionBlock}>
-                  <h4>Feed sections</h4>
-                  {selectedSourceDetail.feed_sections.length === 0 ? (
-                    <p className={styles.emptyText}>No section available.</p>
-                  ) : (
-                    <div className={styles.sectionTags}>
-                      {selectedSourceDetail.feed_sections.map((section) => (
-                        <span key={section}>{section}</span>
-                      ))}
-                    </div>
-                  )}
-                </section>
-
-                <a
-                  href={selectedSourceDetail.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className={styles.urlLink}
-                >
-                  Open article URL
-                </a>
-              </article>
-            ) : null}
-          </section>
-        </div>
+        <SourceModal
+          sourceDetail={selectedSourceDetail}
+          loading={loadingSourceDetail}
+          error={sourceDetailError}
+          onClose={closeSourceDetail}
+        />
       ) : null}
-    </main>
+    </PageShell>
   );
 }

@@ -1,37 +1,5 @@
 .main {
-  --rss-gap: 0.8rem;
-  width: min(1380px, 100% - 2.4rem);
-  margin: 0 auto;
-  padding: 1.2rem 0 2.5rem;
-  display: grid;
-  gap: var(--rss-gap);
-}
-
-.header {
-  border: 1px solid var(--glass-border);
-  background: var(--glass-strong);
-  backdrop-filter: blur(16px);
-  border-radius: 18px;
-  box-shadow: var(--shadow-soft);
-  padding: 1.1rem;
-}
-
-.kicker {
-  margin: 0;
-  color: var(--text-soft);
-  letter-spacing: 0.11em;
-  text-transform: uppercase;
-  font-size: 0.75rem;
-}
-
-.header h1 {
-  margin: 0.34rem 0 0;
-  font-size: clamp(1.6rem, 4vw, 2.2rem);
-}
-
-.header p {
-  margin: 0.5rem 0 0;
-  color: var(--text-muted);
+  --shell-gap: var(--space-3);
 }
 
 .workspace {
@@ -39,39 +7,36 @@
   display: grid;
   grid-template-columns: var(--company-panel-width) minmax(0, 1fr);
   align-items: start;
-  gap: var(--rss-gap);
+  gap: var(--space-3);
 }
 
 .companyPanel {
   position: sticky;
-  top: calc(var(--admin-navbar-height) + var(--rss-gap));
+  top: calc(var(--admin-navbar-height) + var(--space-3));
   width: 100%;
-  max-height: calc(100dvh - var(--admin-navbar-height) - (var(--rss-gap) * 2));
+  max-height: calc(100vh - var(--admin-navbar-height) - (var(--space-3) * 2));
+  max-height: calc(100dvh - var(--admin-navbar-height) - (var(--space-3) * 2));
   z-index: 10;
-  border: 1px solid var(--glass-border);
-  background: var(--glass-strong);
-  backdrop-filter: blur(14px);
-  border-radius: 18px;
-  padding: 0.82rem 0.7rem;
-  box-shadow: var(--shadow-soft);
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
-  gap: var(--rss-gap);
-  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: visible;
 }
 
 .companyRail {
   display: grid;
   grid-auto-flow: row;
   grid-auto-rows: min-content;
-  gap: var(--rss-gap);
+  gap: var(--space-3);
+  flex: 1 1 auto;
   min-height: 0;
   align-content: start;
   overflow-y: auto;
   overflow-x: hidden;
-  padding-right: 0.2rem;
+  overscroll-behavior: contain;
+  padding-right: var(--space-1);
   scrollbar-width: thin;
-  scrollbar-color: rgba(125, 157, 255, 0.34) transparent;
+  scrollbar-color: var(--color-heavenly-20) transparent;
 }
 
 .companyRail::-webkit-scrollbar {
@@ -79,8 +44,8 @@
 }
 
 .companyRail::-webkit-scrollbar-thumb {
-  background: rgba(125, 157, 255, 0.34);
-  border-radius: 999px;
+  background: var(--color-heavenly-20);
+  border-radius: var(--radius-pill);
 }
 
 .companyCardItem {
@@ -90,15 +55,10 @@
 
 .workspaceContent {
   display: grid;
-  gap: var(--rss-gap);
+  gap: var(--space-3);
 }
 
 @media (max-width: 720px) {
-  .main {
-    width: min(1320px, 100% - 1.4rem);
-    padding-top: 1.2rem;
-  }
-
   .workspace {
     grid-template-columns: 1fr;
   }
@@ -109,19 +69,16 @@
     max-height: none;
     top: auto;
     z-index: auto;
-    padding: 0.95rem;
+    padding: var(--space-4);
   }
 
   .companyRail {
     grid-template-columns: repeat(auto-fill, minmax(82px, 1fr));
-    gap: var(--rss-gap);
     max-height: none;
     overflow: visible;
     padding-right: 0;
   }
-}
 
-@media (max-width: 720px) {
   .companyCardItem {
     min-width: 0;
   }
