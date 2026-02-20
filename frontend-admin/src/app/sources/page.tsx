@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
   Button,
@@ -31,6 +31,7 @@ import type {
 import styles from "./page.module.css";
 
 const PAGE_SIZE = 50;
+const TILE_MIN_WIDTH_PX = 270;
 
 type CompanyOption = {
   id: number;
@@ -42,6 +43,13 @@ type PopInfoState = {
   title: string;
   text: string;
   type: PopInfoType;
+};
+
+type SourceItem = RssSourcePageRead["items"][number];
+
+type BufferedSourceItem = {
+  source: RssSourcePageRead["items"][number];
+  index: number;
 };
 
 function formatIngestSummary(result: RssSourceIngestRead): string {
@@ -71,6 +79,10 @@ function getFeedLabel(feed: RssFeed): string {
   return `#${feed.id} - ${companyName}${section}`;
 }
 
+function hasBannerImage(imageUrl: string | null): boolean {
+  return (imageUrl?.trim().length ?? 0) > 0;
+}
+
 export default function AdminSourcesPage() {
   const [sourcesPage, setSourcesPage] = useState<RssSourcePageRead>({
     items: [],
@@ -92,6 +104,8 @@ export default function AdminSourcesPage() {
   const [selectedSourceDetail, setSelectedSourceDetail] = useState<RssSourceDetail | null>(null);
   const [loadingSourceDetail, setLoadingSourceDetail] = useState<boolean>(false);
   const [sourceDetailError, setSourceDetailError] = useState<string | null>(null);
+  const [gridColumns, setGridColumns] = useState<number>(1);
+  const tileGridRef = useRef<HTMLDivElement | null>(null);
 
   const loadFilters = useCallback(async () => {
     setLoadingFilters(true);
@@ -272,6 +286,99 @@ export default function AdminSourcesPage() {
     return Array.from(uniqueById.values()).sort((left, right) => left.id - right.id);
   }, [feeds]);
 
+  const orderedSourceRows = useMemo<SourceItem[][]>(() => {
+    const withBannerBuffer: BufferedSourceItem[] = [];
+    const withoutBannerBuffer: BufferedSourceItem[] = [];
+    const rows: SourceItem[][] = [];
+    const canFlushWithBanner = () => withBannerBuffer.length >= gridColumns;
+    const canFlushWithoutBanner = () => withoutBannerBuffer.length >= gridColumns;
+    const flushRow = (buffer: BufferedSourceItem[]) => {
+      rows.push(buffer.splice(0, gridColumns).map((item) => item.source));
+    };
+    const flushRemainingBuffer = (buffer: BufferedSourceItem[]) => {
+      while (buffer.length > 0) {
+        flushRow(buffer);
+      }
+    };
+
+    const flushFullRows = () => {
+      while (canFlushWithBanner() || canFlushWithoutBanner()) {
+        if (canFlushWithBanner() && canFlushWithoutBanner()) {
+          const withBannerFirstIndex = withBannerBuffer[0]?.index ?? Number.MAX_SAFE_INTEGER;
+          const withoutBannerFirstIndex = withoutBannerBuffer[0]?.index ?? Number.MAX_SAFE_INTEGER;
+          if (withBannerFirstIndex <= withoutBannerFirstIndex) {
+            flushRow(withBannerBuffer);
+            continue;
+          }
+          flushRow(withoutBannerBuffer);
+          continue;
+        }
+
+        if (canFlushWithBanner()) {
+          flushRow(withBannerBuffer);
+          continue;
+        }
+
+        flushRow(withoutBannerBuffer);
+      }
+    };
+
+    sourcesPage.items.forEach((source, index) => {
+      const bufferedSource: BufferedSourceItem = { source, index };
+      if (hasBannerImage(source.image_url)) {
+        withBannerBuffer.push(bufferedSource);
+      } else {
+        withoutBannerBuffer.push(bufferedSource);
+      }
+      flushFullRows();
+    });
+
+    if (withBannerBuffer.length > 0 && withoutBannerBuffer.length > 0) {
+      const withBannerFirstIndex = withBannerBuffer[0]?.index ?? Number.MAX_SAFE_INTEGER;
+      const withoutBannerFirstIndex = withoutBannerBuffer[0]?.index ?? Number.MAX_SAFE_INTEGER;
+      if (withBannerFirstIndex <= withoutBannerFirstIndex) {
+        flushRemainingBuffer(withBannerBuffer);
+        flushRemainingBuffer(withoutBannerBuffer);
+      } else {
+        flushRemainingBuffer(withoutBannerBuffer);
+        flushRemainingBuffer(withBannerBuffer);
+      }
+    } else {
+      flushRemainingBuffer(withBannerBuffer);
+      flushRemainingBuffer(withoutBannerBuffer);
+    }
+
+    return rows;
+  }, [gridColumns, sourcesPage.items]);
+
+  useEffect(() => {
+    const tileGrid = tileGridRef.current;
+    if (!tileGrid) {
+      return;
+    }
+
+    const updateGridColumns = () => {
+      const computedStyles = window.getComputedStyle(tileGrid);
+      const gapRaw = computedStyles.columnGap || computedStyles.gap || "0";
+      const columnGap = Number.parseFloat(gapRaw) || 0;
+      const availableWidth = tileGrid.clientWidth;
+      const computedColumns = Math.max(
+        1,
+        Math.floor((availableWidth + columnGap) / (TILE_MIN_WIDTH_PX + columnGap)),
+      );
+
+      setGridColumns((current) => (current === computedColumns ? current : computedColumns));
+    };
+
+    updateGridColumns();
+    const resizeObserver = new ResizeObserver(updateGridColumns);
+    resizeObserver.observe(tileGrid);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [loadingSources, sourcesPage.items.length]);
+
   const hasPreviousPage = sourcesPage.offset > 0;
   const hasNextPage = sourcesPage.offset + sourcesPage.items.length < sourcesPage.total;
   const startIndex = sourcesPage.total === 0 ? 0 : sourcesPage.offset + 1;
@@ -424,18 +531,26 @@ export default function AdminSourcesPage() {
         ) : sourcesPage.items.length === 0 ? (
           <Notice className={styles.emptyText}>No source available for this filter.</Notice>
         ) : (
-          <div className={styles.tileGrid}>
-            {sourcesPage.items.map((source) => (
-              <SourceCard
-                key={source.id}
-                sourceId={source.id}
-                title={source.title}
-                summary={source.summary}
-                imageUrl={source.image_url}
-                companyName={source.company_name}
-                publishedAt={source.published_at}
-                onClick={handleTileClick}
-              />
+          <div ref={tileGridRef} className={styles.tileRows}>
+            {orderedSourceRows.map((row, rowIndex) => (
+              <div
+                key={`source-row-${rowIndex}`}
+                className={styles.tileRow}
+                style={{ gridTemplateColumns: `repeat(${gridColumns}, minmax(0, 1fr))` }}
+              >
+                {row.map((source) => (
+                  <SourceCard
+                    key={source.id}
+                    sourceId={source.id}
+                    title={source.title}
+                    summary={source.summary}
+                    imageUrl={source.image_url}
+                    companyName={source.company_name}
+                    publishedAt={source.published_at}
+                    onClick={handleTileClick}
+                  />
+                ))}
+              </div>
             ))}
           </div>
         )}

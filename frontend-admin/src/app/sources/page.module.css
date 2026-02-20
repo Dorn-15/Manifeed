@@ -79,10 +79,14 @@
   line-height: var(--text-r-line-height);
 }
 
-.tileGrid {
+.tileRows {
   display: grid;
   gap: var(--space-3);
-  grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+}
+
+.tileRow {
+  display: grid;
+  gap: var(--space-3);
 }
 
 .pagination {

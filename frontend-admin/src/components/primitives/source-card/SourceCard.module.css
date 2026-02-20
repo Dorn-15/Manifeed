@@ -3,6 +3,7 @@
   border-radius: var(--radius-md);
   background: linear-gradient(160deg, var(--surface-panel) 0%, var(--color-ebony-100) 100%);
   width: 100%;
+  height: fit-content;
   padding: 0;
   cursor: pointer;
   display: grid;
@@ -23,6 +24,14 @@
   box-shadow: var(--effect-focus-ring);
 }
 
+.cardWithBanner {
+  background: linear-gradient(160deg, var(--surface-panel) 0%, var(--color-ebony-100) 100%);
+}
+
+.cardWithoutBanner {
+  background: linear-gradient(160deg, var(--surface-panel) 0%, var(--surface-panel-soft) 100%);
+}
+
 .banner {
   width: 100%;
   aspect-ratio: 2 / 1;
@@ -37,28 +46,29 @@
   object-fit: cover;
 }
 
-.bannerFallback {
-  width: 100%;
-  height: 100%;
-  display: grid;
-  place-items: center;
-  background: linear-gradient(
-    160deg,
-    var(--color-heavenly-20) 0%,
-    var(--color-heavenly-0) 100%
-  );
-}
-
-.bannerFallback span {
-  color: var(--color-heavenly-70);
-  font-size: var(--h2-size);
-  font-weight: var(--h2-weight);
-  line-height: var(--h2-line-height);
-}
-
 .body {
+  height: fit-content;
   padding: var(--space-3);
   display: grid;
+  gap: var(--space-2);
+}
+
+.cardWithoutBanner .body {
+  padding: var(--space-2) var(--space-3);
+}
+
+.company {
+  margin: 0;
+  height: 1.25rem;
+  color: var(--text-accent);
+  font-size: var(--text-r-size);
+  font-weight: var(--text-r-weight);
+}
+
+.contentContainer {
+  height: 8rem;
+  display: flex;
+  flex-direction: column;
   gap: var(--space-2);
 }
 
@@ -70,14 +80,6 @@
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   color: var(--text-primary);
-}
-
-.company {
-  margin: 0;
-  color: var(--text-accent);
-  font-size: var(--text-r-size);
-  font-weight: var(--text-r-weight);
-  line-height: var(--text-r-line-height);
 }
 
 .summary {

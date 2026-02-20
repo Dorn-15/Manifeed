@@ -33,7 +33,6 @@ export function SourceModal({
   onClose,
 }: SourceModalProps) {
   const publishedAt = sourceDetail ? formatSourceDate(sourceDetail.published_at, "full") : "n/a";
-  const fallbackLetter = sourceDetail ? getCompanyName(sourceDetail.company_name).slice(0, 1) : "?";
 
   return (
     <div
@@ -68,20 +67,16 @@ export function SourceModal({
 
         {!loading && !error && sourceDetail ? (
           <article className={styles.content}>
+            {sourceDetail.image_url ? (
             <div className={styles.banner}>
-              {sourceDetail.image_url ? (
                 <img
                   src={sourceDetail.image_url}
                   alt={sourceDetail.title}
                   loading="lazy"
                   decoding="async"
                 />
-              ) : (
-                <div className={styles.bannerFallback}>
-                  <span>{fallbackLetter}</span>
-                </div>
-              )}
-            </div>
+              </div>
+            ) : null}
 
             <div className={styles.body}>
               <p className={styles.company}>{formatCompanyLabel(sourceDetail.company_name)}</p>
@@ -112,12 +107,6 @@ export function SourceModal({
               </footer>
             </div>
           </article>
-        ) : null}
-
-        {!loading && !error && !sourceDetail ? (
-          <div className={styles.statePanel}>
-            <Notice className={styles.emptyText}>No source detail available.</Notice>
-          </div>
         ) : null}
       </Surface>
     </div>
