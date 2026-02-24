@@ -13,17 +13,28 @@ type SourceModalProps = {
   onClose: () => void;
 };
 
-function getCompanyName(companyName: string | null): string {
-  return companyName ?? "Unknown company";
+function getCompanyName(companyNames: string[]): string {
+  if (companyNames.length === 0) {
+    return "Unknown company";
+  }
+  return companyNames.join(", ");
 }
 
-function formatCompanyLabel(companyName: string | null): string {
-  const candidate = getCompanyName(companyName).trim();
+function formatCompanyLabel(companyNames: string[]): string {
+  const candidate = getCompanyName(companyNames).trim();
   if (candidate.endsWith(".")) {
     return candidate;
   }
 
   return `${candidate}.`;
+}
+
+function formatAuthor(author: string | null): string {
+  const candidate = author?.trim() ?? "";
+  if (!candidate) {
+    return "Unknown author";
+  }
+  return candidate;
 }
 
 export function SourceModal({
@@ -68,7 +79,7 @@ export function SourceModal({
         {!loading && !error && sourceDetail ? (
           <article className={styles.content}>
             {sourceDetail.image_url ? (
-            <div className={styles.banner}>
+              <div className={styles.banner}>
                 <img
                   src={sourceDetail.image_url}
                   alt={sourceDetail.title}
@@ -79,10 +90,15 @@ export function SourceModal({
             ) : null}
 
             <div className={styles.body}>
-              <p className={styles.company}>{formatCompanyLabel(sourceDetail.company_name)}</p>
+              <p className={styles.company}>{formatCompanyLabel(sourceDetail.company_names)}</p>
               <h3 id="source-detail-title">{sourceDetail.title}</h3>
 
               <p className={styles.summary}>{sourceDetail.summary ?? "No summary available."}</p>
+
+              <section className={styles.sectionBlock}>
+                <h4>Author</h4>
+                <p className={styles.metaText}>{formatAuthor(sourceDetail.author)}</p>
+              </section>
 
               <section className={styles.sectionBlock}>
                 <h4>Feed sections</h4>

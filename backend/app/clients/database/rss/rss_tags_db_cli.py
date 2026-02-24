@@ -4,12 +4,13 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models.rss import RssTag
+from app.utils import dedup_str
 
 def get_or_create_tags(
     db: Session,
     tag_names: Sequence[str],
 ) -> tuple[list[RssTag], int]:
-    unique_tag_names = _deduplicate_tag_names(tag_names)
+    unique_tag_names = dedup_str(tag_names)
     if not unique_tag_names:
         return [], 0
 
@@ -31,16 +32,3 @@ def get_or_create_tags(
 
     tags_in_input_order = [tags_by_name[tag_name] for tag_name in unique_tag_names]
     return tags_in_input_order, created_tags_count
-
-def _deduplicate_tag_names(tag_names: Sequence[str]) -> list[str]:
-    unique_names: list[str] = []
-    seen_names: set[str] = set()
-
-    for tag_name in tag_names:
-        cleaned_name = tag_name.strip()
-        if not cleaned_name or cleaned_name in seen_names:
-            continue
-        seen_names.add(cleaned_name)
-        unique_names.append(cleaned_name)
-
-    return unique_names

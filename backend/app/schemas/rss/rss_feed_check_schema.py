@@ -1,6 +1,6 @@
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 RssFeedCheckStatus = Literal["valid", "invalid"]
 
@@ -10,9 +10,4 @@ class RssFeedCheckResultRead(BaseModel):
     url: str
     status: RssFeedCheckStatus
     error: str
-
-
-class RssFeedCheckRead(BaseModel):
-    results: list[RssFeedCheckResultRead] = Field(default_factory=list)
-    valid_count: int = 0
-    invalid_count: int = 0
+    fetchprotection: int | None = None

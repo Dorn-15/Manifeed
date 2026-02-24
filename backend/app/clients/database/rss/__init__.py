@@ -4,13 +4,14 @@ from .get_rss_feeds_db_cli import (
     list_rss_feeds_by_urls,
     list_enabled_rss_feeds,
     get_rss_feed_by_id,
-    get_rss_feed_read_by_id,
 )
 
 from .utils_rss_feeds_db_cli import (
     upsert_feed,
+    link_company_to_feed,
     delete_company_feeds_not_in_urls,
     set_rss_feed_enabled,
+    set_rss_company_enabled,
 )
 
 from .rss_company_db_cli import (
@@ -29,10 +30,11 @@ __all__ = [
     "list_rss_feeds_by_urls",
     "list_enabled_rss_feeds",
     "get_rss_feed_by_id",
-    "get_rss_feed_read_by_id",
     "upsert_feed",
-    "set_rss_feed_enabled",
+    "link_company_to_feed",
     "delete_company_feeds_not_in_urls",
+    "set_rss_feed_enabled",
+    "set_rss_company_enabled",
     # Tags
     "get_or_create_tags",
     # Companies

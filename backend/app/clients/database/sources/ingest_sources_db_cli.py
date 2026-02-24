@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import datetime, timezone
+
 from sqlalchemy.orm import Session
 
 from app.models.sources import RssSource, RssSourceFeed
@@ -10,12 +12,13 @@ def create_rss_source(
     db: Session,
     payload: RssSourceCandidateSchema,
 ) -> RssSource:
+    normalized_published_at = payload.published_at or datetime.now(timezone.utc)
     source = RssSource(
         title=payload.title,
         summary=payload.summary,
+        author=payload.author,
         url=payload.url,
-        published_at=payload.published_at,
-        language=payload.language,
+        published_at=normalized_published_at,
         image_url=payload.image_url,
     )
     db.add(source)
@@ -36,12 +39,14 @@ def update_rss_source(
         source.summary = payload.summary
         has_changes = True
 
-    if payload.published_at is not None and source.published_at != payload.published_at:
-        source.published_at = payload.published_at
+    if payload.author is not None and source.author != payload.author:
+        source.author = payload.author
         has_changes = True
 
-    if payload.language is not None and source.language != payload.language:
-        source.language = payload.language
+    if payload.published_at is not None and source.published_at != payload.published_at:
+        source.published_at = payload.published_at
+        for feed_link in source.feed_links:
+            feed_link.published_at = payload.published_at
         has_changes = True
 
     if payload.image_url is not None and source.image_url != payload.image_url:
@@ -57,10 +62,18 @@ def link_source_to_feed(
 ) -> bool:
     if feed_id <= 0:
         return False
+    if source.id is None:
+        return False
 
     for feed_link in source.feed_links:
         if feed_link.feed_id == feed_id:
             return False
 
-    source.feed_links.append(RssSourceFeed(feed_id=feed_id))
+    source.feed_links.append(
+        RssSourceFeed(
+            source_id=source.id,
+            feed_id=feed_id,
+            published_at=source.published_at,
+        )
+    )
     return True

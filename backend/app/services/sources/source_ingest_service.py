@@ -23,7 +23,6 @@ from app.schemas.sources import (
     RssSourceIngestErrorRead,
     RssSourceIngestRead,
 )
-from app.utils import normalize_lang_by_country
 
 DEFAULT_MAX_CONCURRENT_FETCHES = 5
 
@@ -70,7 +69,6 @@ async def ingest_rss_sources(
         try:
             candidates = normalize_rss_source_candidates(
                 fetch_payload.entries,
-                default_language=normalize_lang_by_country(feed.country),
             )
             created_count, updated_count = _upsert_feed_sources(
                 db=db,
@@ -134,6 +132,7 @@ def _upsert_feed_sources(
         source = existing_by_url.get(candidate.url)
         if source is None:
             source = create_rss_source(db=db, payload=candidate)
+            db.flush([source])
             existing_by_url[candidate.url] = source
             link_source_to_feed(source=source, feed_id=feed.id)
             sources_created += 1

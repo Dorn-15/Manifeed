@@ -1,4 +1,5 @@
 from sqlalchemy.orm import Session
+from fastapi import HTTPException
 
 from app.clients.database.sources import (
     get_rss_source_detail_read_by_id,
@@ -7,7 +8,6 @@ from app.clients.database.sources import (
 from app.schemas.sources import (
     RssSourceDetailRead,
     RssSourcePageRead,
-    RssSourceRead,
 )
 
 
@@ -26,7 +26,12 @@ def get_rss_sources(
         feed_id=feed_id,
         company_id=company_id,
     )
-    return _build_page_read(items=items, total=total, limit=limit, offset=offset)
+    return RssSourcePageRead(
+        items=items,
+        total=total,
+        limit=limit,
+        offset=offset,
+    )
 
 
 def get_rss_source_by_id(
@@ -34,19 +39,10 @@ def get_rss_source_by_id(
     *,
     source_id: int,
 ) -> RssSourceDetailRead | None:
-    return get_rss_source_detail_read_by_id(db, source_id=source_id)
-
-
-def _build_page_read(
-    *,
-    items: list[RssSourceRead],
-    total: int,
-    limit: int,
-    offset: int,
-) -> RssSourcePageRead:
-    return RssSourcePageRead(
-        items=items,
-        total=total,
-        limit=limit,
-        offset=offset,
-    )
+    source = get_rss_source_detail_read_by_id(db, source_id=source_id)
+    if source is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"RSS source {source_id} not found",
+        )
+    return source

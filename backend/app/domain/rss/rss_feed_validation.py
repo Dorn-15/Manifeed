@@ -5,7 +5,6 @@ from xml.etree import ElementTree
 
 RssValidationResult = tuple[str, Optional[str]]
 
-
 def validate_rss_feed_payload(content: str, content_type: str) -> RssValidationResult:
     """Return (status, error). Status is valid|invalid."""
     content_type_lower = content_type.lower()

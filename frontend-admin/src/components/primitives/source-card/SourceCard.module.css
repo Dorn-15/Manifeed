@@ -59,10 +59,17 @@
 
 .company {
   margin: 0;
-  height: 1.25rem;
   color: var(--text-accent);
   font-size: var(--text-r-size);
   font-weight: var(--text-r-weight);
+}
+
+.author {
+  margin: 0;
+  color: var(--text-secondary-strong);
+  font-size: var(--text-r-size);
+  font-weight: var(--text-r-weight);
+  line-height: var(--text-r-line-height);
 }
 
 .contentContainer {

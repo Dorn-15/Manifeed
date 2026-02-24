@@ -5,18 +5,15 @@ from typing import Any
 import re
 
 from app.schemas.sources import RssSourceCandidateSchema
-from app.utils import normalize_country
 
 _HTML_TAG_RE = re.compile(r"<[^>]+>")
 
 
 def normalize_rss_source_candidates(
     entries: list[dict[str, Any]],
-    default_language: str | None = None,
 ) -> list[RssSourceCandidateSchema]:
     candidates: list[RssSourceCandidateSchema] = []
     index = 0
-    normalized_default_language = normalize_country(default_language)
 
     while index < len(entries):
         entry = entries[index]
@@ -24,7 +21,6 @@ def normalize_rss_source_candidates(
 
         candidate = _normalize_rss_source_candidate(
             entry=entry,
-            default_language=normalized_default_language,
         )
         if candidate is None:
             continue
@@ -35,27 +31,19 @@ def normalize_rss_source_candidates(
 
 def _normalize_rss_source_candidate(
     entry: dict[str, Any],
-    default_language: str | None = None,
 ) -> RssSourceCandidateSchema | None:
     url = _normalize_text(entry.get("url"), strip_html=False)
     title = _normalize_text(entry.get("title"), strip_html=True, max_length=500)
     if not url or not title:
         return None
-
-    summary = _normalize_text(entry.get("summary"), strip_html=True, max_length=5000)
-    image_url = _normalize_text(entry.get("image_url"), strip_html=False, max_length=1000)
-    language = normalize_country(_normalize_text(entry.get("language"), strip_html=False))
-    if language is None:
-        language = default_language
-
-    published_at = _normalize_datetime(entry.get("published_at"))
+    
     return RssSourceCandidateSchema(
         title=title,
         url=url,
-        summary=summary,
-        published_at=published_at,
-        language=language,
-        image_url=image_url,
+        summary=_normalize_text(entry.get("summary"), strip_html=True, max_length=5000),
+        author=_normalize_text(entry.get("author"), strip_html=True, max_length=255),
+        published_at=_normalize_datetime(entry.get("published_at")),
+        image_url=_normalize_text(entry.get("image_url"), strip_html=False, max_length=1000),
     )
 
 

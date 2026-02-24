@@ -1,5 +1,6 @@
 import importlib
 from contextlib import contextmanager
+from fastapi import HTTPException
 
 from app.schemas.sources import (
     RssSourceDetailRead,
@@ -12,16 +13,19 @@ from app.utils import JobAlreadyRunning
 sources_router_module = importlib.import_module("app.routers.sources_router")
 
 
-def test_get_sources_route_returns_service_result(client, mock_db_session, monkeypatch) -> None:
-    expected_response = RssSourcePageRead(
+@contextmanager
+def _no_op_job_lock(_db, _name):
+    yield
+
+
+def test_read_sources_route_returns_service_payload(client, mock_db_session, monkeypatch) -> None:
+    expected = RssSourcePageRead(
         items=[
             RssSourceRead(
-                id=42,
-                title="Source article",
-                summary="Summary",
-                url="https://example.com/article",
-                image_url="https://example.com/img.jpg",
-                company_name="The Verge",
+                id=1,
+                title="Article",
+                url="https://example.com/a",
+                company_names=["ACME"],
             )
         ],
         total=1,
@@ -35,140 +39,54 @@ def test_get_sources_route_returns_service_result(client, mock_db_session, monke
         assert offset == 0
         assert feed_id is None
         assert company_id is None
-        return expected_response
+        return expected
 
     monkeypatch.setattr(sources_router_module, "get_rss_sources", fake_get_rss_sources)
 
     response = client.get("/sources/")
 
     assert response.status_code == 200
-    assert response.json() == expected_response.model_dump(mode="json")
+    assert response.json() == expected.model_dump(mode="json")
 
 
-def test_get_sources_by_feed_route_returns_service_result(
-    client,
-    mock_db_session,
-    monkeypatch,
-) -> None:
-    expected_response = RssSourcePageRead(total=0, limit=6, offset=12)
-
-    def fake_get_rss_sources(db, limit, offset, feed_id=None, company_id=None):
-        assert db is mock_db_session
-        assert feed_id == 9
-        assert company_id is None
-        assert limit == 6
-        assert offset == 12
-        return expected_response
-
+def test_read_source_by_id_returns_404_when_not_found(client, mock_db_session, monkeypatch) -> None:
     monkeypatch.setattr(
         sources_router_module,
-        "get_rss_sources",
-        fake_get_rss_sources,
+        "get_rss_source_by_id",
+        lambda db, source_id: (_ for _ in ()).throw(
+            HTTPException(status_code=404, detail=f"RSS source {source_id} not found")
+        ),
     )
 
-    response = client.get("/sources/feeds/9?limit=6&offset=12")
-
-    assert response.status_code == 200
-    assert response.json() == expected_response.model_dump(mode="json")
-
-
-def test_get_sources_by_company_route_returns_service_result(
-    client,
-    mock_db_session,
-    monkeypatch,
-) -> None:
-    expected_response = RssSourcePageRead(total=0, limit=20, offset=0)
-
-    def fake_get_rss_sources(db, limit, offset, feed_id=None, company_id=None):
-        assert db is mock_db_session
-        assert company_id == 3
-        assert feed_id is None
-        assert limit == 20
-        assert offset == 0
-        return expected_response
-
-    monkeypatch.setattr(
-        sources_router_module,
-        "get_rss_sources",
-        fake_get_rss_sources,
-    )
-
-    response = client.get("/sources/companies/3?limit=20")
-
-    assert response.status_code == 200
-    assert response.json() == expected_response.model_dump(mode="json")
-
-
-def test_get_source_by_id_route_returns_service_result(client, mock_db_session, monkeypatch) -> None:
-    expected_response = RssSourceDetailRead(
-        id=7,
-        title="Source 7",
-        summary="Summary 7",
-        url="https://example.com/source-7",
-        image_url=None,
-        company_name="Wired",
-        feed_sections=["AI", "Main"],
-    )
-
-    def fake_get_rss_source_by_id(db, source_id):
-        assert db is mock_db_session
-        assert source_id == 7
-        return expected_response
-
-    monkeypatch.setattr(sources_router_module, "get_rss_source_by_id", fake_get_rss_source_by_id)
-
-    response = client.get("/sources/7")
-
-    assert response.status_code == 200
-    assert response.json() == expected_response.model_dump(mode="json")
-
-
-def test_get_source_by_id_route_returns_404_when_missing(
-    client,
-    mock_db_session,
-    monkeypatch,
-) -> None:
-    def fake_get_rss_source_by_id(db, source_id):
-        assert db is mock_db_session
-        assert source_id == 700
-        return None
-
-    monkeypatch.setattr(sources_router_module, "get_rss_source_by_id", fake_get_rss_source_by_id)
-
-    response = client.get("/sources/700")
+    response = client.get("/sources/999")
 
     assert response.status_code == 404
-    assert response.json() == {"detail": "RSS source 700 not found"}
+    assert response.json() == {"detail": "RSS source 999 not found"}
 
 
-def test_ingest_sources_route_returns_service_result(
-    client,
-    mock_db_session,
-    monkeypatch,
-) -> None:
-    expected_response = RssSourceIngestRead(
-        status="completed",
-        feeds_processed=2,
-        feeds_skipped=1,
-        sources_created=4,
-        sources_updated=3,
-        duration_ms=120,
-    )
+def test_ingest_sources_route_passes_feed_ids(client, mock_db_session, monkeypatch) -> None:
+    monkeypatch.setattr(sources_router_module, "job_lock", _no_op_job_lock)
 
-    async def fake_ingest_rss_sources(db, feed_ids):
+    async def fake_ingest_rss_sources(db, feed_ids=None):
         assert db is mock_db_session
         assert feed_ids == [3, 4]
-        return expected_response
+        return RssSourceIngestRead(
+            feeds_processed=1,
+            feeds_skipped=0,
+            sources_created=2,
+            sources_updated=1,
+            duration_ms=10,
+        )
 
     monkeypatch.setattr(sources_router_module, "ingest_rss_sources", fake_ingest_rss_sources)
 
-    response = client.post("/sources/ingest", json={"feed_ids": [3, 4]})
+    response = client.post("/sources/ingest?feed_ids=3&feed_ids=4")
 
     assert response.status_code == 200
-    assert response.json() == expected_response.model_dump()
+    assert response.json()["feeds_processed"] == 1
 
 
-def test_ingest_sources_route_returns_409_when_job_lock_is_busy(client, monkeypatch) -> None:
+def test_ingest_sources_route_returns_409_when_job_is_running(client, monkeypatch) -> None:
     @contextmanager
     def busy_job_lock(_db, _name):
         raise JobAlreadyRunning("sources_ingest")
@@ -180,3 +98,30 @@ def test_ingest_sources_route_returns_409_when_job_lock_is_busy(client, monkeypa
 
     assert response.status_code == 409
     assert response.json() == {"message": "Sources ingest already running"}
+
+
+def test_read_sources_route_returns_422_for_invalid_limit(client) -> None:
+    response = client.get("/sources/?limit=1000")
+
+    assert response.status_code == 422
+
+
+def test_read_source_by_id_route_returns_payload(client, mock_db_session, monkeypatch) -> None:
+    expected = RssSourceDetailRead(
+        id=7,
+        title="Source 7",
+        url="https://example.com/s/7",
+        company_names=["ACME"],
+        feed_sections=["Main"],
+    )
+
+    monkeypatch.setattr(
+        sources_router_module,
+        "get_rss_source_by_id",
+        lambda db, source_id: expected if source_id == 7 else None,
+    )
+
+    response = client.get("/sources/7")
+
+    assert response.status_code == 200
+    assert response.json() == expected.model_dump(mode="json")

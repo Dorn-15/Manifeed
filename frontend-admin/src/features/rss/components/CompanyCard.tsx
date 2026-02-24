@@ -7,7 +7,7 @@ import styles from "./CompanyCard.module.css";
 type CompanyCardProps = {
   className?: string;
   companyName: string;
-  companySlug: string;
+  companyIconUrl: string | null;
   isSelected: boolean;
   onSelect: () => void;
 };
@@ -15,12 +15,12 @@ type CompanyCardProps = {
 export function CompanyCard({
   className,
   companyName,
-  companySlug,
+  companyIconUrl,
   isSelected,
   onSelect,
 }: CompanyCardProps) {
   const [logoFailed, setLogoFailed] = useState(false);
-  const logoUrl = buildRssIconUrl(`${companySlug}/${companySlug}.svg`);
+  const logoUrl = buildRssIconUrl(companyIconUrl);
   const cardClassName = [styles.card, isSelected ? styles.cardSelected : "", className ?? ""]
     .filter(Boolean)
     .join(" ");

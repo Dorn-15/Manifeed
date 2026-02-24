@@ -19,12 +19,12 @@ function getTrustPercent(trustScore: number): number {
 }
 
 export function FeedCard({ feed, toggling, onToggleEnabled }: FeedCardProps) {
-  const iconUrl = buildRssIconUrl(feed.icon_url);
+  const iconUrl = buildRssIconUrl(feed.company?.icon_url ?? null);
   const trustPercent = getTrustPercent(feed.trust_score);
-  const companyName = feed.company_name ?? "Unknown company";
+  const companyName = feed.company?.name ?? "Unknown company";
   const section = feed.section ?? "No section";
-  const country = feed.country ?? "n/a";
-  const companyDisabled = feed.company_enabled === false;
+  const country = feed.company?.country ?? "n/a";
+  const companyDisabled = feed.company?.enabled === false;
 
   return (
     <Surface as="article" className={styles.card} tone="gradient">
@@ -47,8 +47,8 @@ export function FeedCard({ feed, toggling, onToggleEnabled }: FeedCardProps) {
             <Badge className={styles.languagePill} tone="warning" uppercase>
               {country}
             </Badge>
-            <Badge className={styles.statusPill} tone="accent" uppercase>
-              {feed.status}
+            <Badge className={styles.metaPill} tone="accent" uppercase>
+              fp:{feed.fetchprotection}
             </Badge>
           </div>
         </div>

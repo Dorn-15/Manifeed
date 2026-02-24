@@ -41,9 +41,8 @@ export async function getRssSourceById(sourceId: number): Promise<RssSourceDetai
 }
 
 export async function ingestRssSources(feedIds?: number[]): Promise<RssSourceIngestRead> {
-  const payload = feedIds && feedIds.length > 0 ? { feed_ids: feedIds } : undefined;
   return apiRequest<RssSourceIngestRead>("/sources/ingest", {
     method: "POST",
-    body: payload ? JSON.stringify(payload) : undefined,
+    body: feedIds ? JSON.stringify({ feed_ids: feedIds }) : undefined,
   });
 }

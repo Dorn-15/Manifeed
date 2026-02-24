@@ -9,7 +9,6 @@ from database import Base
 class RssFeedTag(Base):
     __tablename__ = "rss_feed_tags"
     __table_args__ = (
-        sa.Index("idx_rss_feed_tags_feed_id", "feed_id"),
         sa.Index("idx_rss_feed_tags_tag_id", "tag_id"),
     )
 

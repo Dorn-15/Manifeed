@@ -8,168 +8,126 @@ from sqlalchemy.orm import Session
 import app.services.rss.rss_feed_check_service as rss_feed_check_service_module
 
 
-def test_check_rss_feeds_returns_empty_response_when_no_feed(monkeypatch) -> None:
+def test_check_rss_feeds_returns_empty_list_when_no_feed(monkeypatch) -> None:
     db = Mock(spec=Session)
-    monkeypatch.setattr(
-        rss_feed_check_service_module,
-        "list_rss_feeds",
-        lambda _db, feed_ids=None: [],
-    )
+    monkeypatch.setattr(rss_feed_check_service_module, "list_rss_feeds", lambda _db, feed_ids=None: [])
 
-    response = asyncio.run(rss_feed_check_service_module.check_rss_feeds(db))
+    result = asyncio.run(rss_feed_check_service_module.check_rss_feeds(db))
 
-    assert response.valid_count == 0
-    assert response.invalid_count == 0
-    assert response.results == []
+    assert result == []
     db.commit.assert_not_called()
     db.rollback.assert_not_called()
 
 
-def test_check_rss_feeds_returns_only_invalid_entries_in_results(monkeypatch) -> None:
+def test_check_rss_feeds_updates_feeds_and_returns_only_invalid(monkeypatch) -> None:
     db = Mock(spec=Session)
-    feeds = [
-        SimpleNamespace(
-            id=1,
-            url="https://example.com/rss/valid",
-            enabled=True,
-            status="unchecked",
-            last_update=None,
-        ),
-        SimpleNamespace(
-            id=2,
-            url="https://example.com/rss/invalid",
-            enabled=True,
-            status="unchecked",
-            last_update=None,
-        ),
-    ]
+    feed_valid = SimpleNamespace(
+        id=1,
+        url="https://example.com/valid.xml",
+        fetchprotection=1,
+        last_update=None,
+        company=SimpleNamespace(language="en", host="example.com"),
+    )
+    feed_invalid = SimpleNamespace(
+        id=2,
+        url="https://example.com/invalid.xml",
+        fetchprotection=1,
+        last_update=None,
+        company=SimpleNamespace(language="fr", host=None),
+    )
+
     monkeypatch.setattr(
         rss_feed_check_service_module,
         "list_rss_feeds",
-        lambda _db, feed_ids=None: feeds,
+        lambda _db, feed_ids=None: [feed_valid, feed_invalid],
     )
 
-    async def fake_check_single_feed(
-        url: str,
-        http_client=None,
-    ):
-        if url.endswith("/valid"):
-            return "valid", None
-        return "invalid", "Request timeout"
+    class FakeHttpContext:
+        async def __aenter__(self):
+            return object()
 
-    monkeypatch.setattr(
-        rss_feed_check_service_module,
-        "_check_single_feed",
-        fake_check_single_feed,
-    )
+        async def __aexit__(self, exc_type, exc, tb):
+            return None
 
-    response = asyncio.run(rss_feed_check_service_module.check_rss_feeds(db, feed_ids=[1, 2]))
+    monkeypatch.setattr(rss_feed_check_service_module, "get_httpx_config", lambda: FakeHttpContext())
 
-    assert response.valid_count == 1
-    assert response.invalid_count == 1
-    assert len(response.results) == 1
-    assert response.results[0].feed_id == 2
-    assert response.results[0].error == "Request timeout"
-    assert feeds[0].status == "valid"
-    assert feeds[0].enabled is True
-    assert feeds[0].last_update is not None
-    assert feeds[1].status == "invalid"
-    assert feeds[1].enabled is False
-    assert feeds[1].last_update is not None
+    async def fake_check_single_feed(feed, http_client=None):
+        if feed.id == 1:
+            return "valid", None, 2
+        return "invalid", "Request timeout", 0
+
+    monkeypatch.setattr(rss_feed_check_service_module, "_check_single_feed", fake_check_single_feed)
+
+    result = asyncio.run(rss_feed_check_service_module.check_rss_feeds(db, feed_ids=[1, 2]))
+
+    assert len(result) == 1
+    assert result[0].feed_id == 2
+    assert result[0].status == "invalid"
+    assert result[0].error == "Request timeout"
+    assert feed_valid.fetchprotection == 2
+    assert feed_invalid.fetchprotection == 0
+    assert feed_valid.last_update is not None
+    assert feed_invalid.last_update is not None
     db.commit.assert_called_once()
     db.rollback.assert_not_called()
 
 
 def test_check_rss_feeds_rolls_back_when_commit_fails(monkeypatch) -> None:
     db = Mock(spec=Session)
-    db.commit.side_effect = RuntimeError("db write failure")
-    feeds = [
-        SimpleNamespace(
-            id=1,
-            url="https://example.com/rss/invalid",
-            enabled=True,
-            status="unchecked",
-            last_update=None,
-        )
-    ]
-    monkeypatch.setattr(
-        rss_feed_check_service_module,
-        "list_rss_feeds",
-        lambda _db, feed_ids=None: feeds,
-    )
+    db.commit.side_effect = RuntimeError("write failed")
+    feed = SimpleNamespace(id=1, url="https://example.com/rss.xml", fetchprotection=1, last_update=None, company=None)
 
-    async def fake_check_single_feed(_url: str, http_client=None):
-        return "invalid", "Unknown error"
+    monkeypatch.setattr(rss_feed_check_service_module, "list_rss_feeds", lambda _db, feed_ids=None: [feed])
 
+    class FakeHttpContext:
+        async def __aenter__(self):
+            return object()
+
+        async def __aexit__(self, exc_type, exc, tb):
+            return None
+
+    monkeypatch.setattr(rss_feed_check_service_module, "get_httpx_config", lambda: FakeHttpContext())
     monkeypatch.setattr(
         rss_feed_check_service_module,
         "_check_single_feed",
-        fake_check_single_feed,
+        lambda feed, http_client=None: asyncio.sleep(0, result=("invalid", "bad", 0)),
     )
 
-    with pytest.raises(RuntimeError):
+    with pytest.raises(RuntimeError, match="write failed"):
         asyncio.run(rss_feed_check_service_module.check_rss_feeds(db))
 
     db.rollback.assert_called_once()
 
 
-def test_check_rss_feeds_reuses_same_http_client(monkeypatch) -> None:
-    db = Mock(spec=Session)
-    feeds = [
-        SimpleNamespace(
-            id=1,
-            url="https://example.com/rss/1",
-            enabled=True,
-            status="unchecked",
-            last_update=None,
-        ),
-        SimpleNamespace(
-            id=2,
-            url="https://example.com/rss/2",
-            enabled=True,
-            status="unchecked",
-            last_update=None,
-        ),
-    ]
-    monkeypatch.setattr(
-        rss_feed_check_service_module,
-        "list_rss_feeds",
-        lambda _db, feed_ids=None: feeds,
+def test_check_single_feed_returns_invalid_when_probe_has_no_content(monkeypatch) -> None:
+    feed = SimpleNamespace(
+        url="https://example.com/rss.xml",
+        company=SimpleNamespace(language="en", host="news.example.com"),
     )
 
-    shared_http_client = object()
-    context_enter_count = 0
+    async def fake_probe(**kwargs):
+        return SimpleNamespace(
+            fetchprotection=0,
+            content=None,
+            content_type=None,
+            error="Blocked",
+        )
 
-    class FakeHttpxContext:
-        async def __aenter__(self):
-            nonlocal context_enter_count
-            context_enter_count += 1
-            return shared_http_client
+    monkeypatch.setattr(rss_feed_check_service_module, "probe_httpx_methods", fake_probe)
 
-        async def __aexit__(self, exc_type, exc_val, exc_tb):
-            return None
+    status, error, fetchprotection = asyncio.run(rss_feed_check_service_module._check_single_feed(feed))
 
-    monkeypatch.setattr(
-        rss_feed_check_service_module,
-        "get_httpx_config",
-        lambda: FakeHttpxContext(),
-    )
+    assert status == "invalid"
+    assert error == "Blocked"
+    assert fetchprotection == 0
 
-    used_clients = []
 
-    async def fake_check_single_feed(url: str, http_client=None):
-        used_clients.append(http_client)
-        return "valid", None
+def test_resolve_feed_header_returns_origin_and_referer() -> None:
+    feed = SimpleNamespace(company=SimpleNamespace(host="https://WWW.Example.com/path"))
 
-    monkeypatch.setattr(
-        rss_feed_check_service_module,
-        "_check_single_feed",
-        fake_check_single_feed,
-    )
+    result = rss_feed_check_service_module._resolve_feed_header(feed)
 
-    response = asyncio.run(rss_feed_check_service_module.check_rss_feeds(db))
-
-    assert response.valid_count == 2
-    assert response.invalid_count == 0
-    assert context_enter_count == 1
-    assert used_clients == [shared_http_client, shared_http_client]
+    assert result == {
+        "Origin": "https://www.example.com",
+        "Referer": "https://www.example.com/",
+    }

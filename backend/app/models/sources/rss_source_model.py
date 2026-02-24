@@ -11,28 +11,29 @@ from database import Base
 class RssSource(Base):
     __tablename__ = "rss_sources"
     __table_args__ = (
-        sa.UniqueConstraint("url", name="uq_rss_sources_url"),
-        sa.Index("idx_rss_sources_language", "language"),
+        sa.UniqueConstraint(
+            "url",
+            "published_at",
+            name="uq_rss_sources_url_published_at",
+        ),
         sa.Index("idx_rss_sources_published_at", "published_at"),
+        {
+            "postgresql_partition_by": "RANGE (published_at)",
+        },
     )
 
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     title: Mapped[str] = mapped_column(sa.String(500), nullable=False)
     summary: Mapped[str | None] = mapped_column(sa.Text(), nullable=True)
+    author: Mapped[str | None] = mapped_column(sa.String(255), nullable=True)
     url: Mapped[str] = mapped_column(sa.String(1000), nullable=False)
-    published_at: Mapped[datetime | None] = mapped_column(sa.DateTime(timezone=True), nullable=True)
-    language: Mapped[str | None] = mapped_column(sa.CHAR(2), nullable=True)
+    published_at: Mapped[datetime] = mapped_column(
+        sa.DateTime(timezone=True),
+        primary_key=True,
+        nullable=False,
+        server_default=sa.func.now(),
+    )
     image_url: Mapped[str | None] = mapped_column(sa.String(1000), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(
-        sa.DateTime(timezone=True),
-        server_default=sa.func.now(),
-        nullable=False,
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        sa.DateTime(timezone=True),
-        server_default=sa.func.now(),
-        nullable=False,
-    )
 
     feed_links: Mapped[list["RssSourceFeed"]] = relationship(
         "RssSourceFeed",

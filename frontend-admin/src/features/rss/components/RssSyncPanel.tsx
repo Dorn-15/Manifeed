@@ -4,28 +4,24 @@ import styles from "./RssSyncPanel.module.css";
 
 type RssSyncPanelProps = {
   syncing: boolean;
+  forceSyncing: boolean;
   checking: boolean;
   loadingFeeds: boolean;
   feedCount: number;
   onSync: () => void;
+  onForceSync: () => void;
   onCheck: () => void;
   onRefresh: () => void;
 };
 
-function formatTimestamp(isoDate: string | null): string {
-  if (!isoDate) {
-    return "never";
-  }
-
-  return new Date(isoDate).toLocaleString();
-}
-
 export function RssSyncPanel({
   syncing,
+  forceSyncing,
   checking,
   loadingFeeds,
   feedCount,
   onSync,
+  onForceSync,
   onCheck,
   onRefresh,
 }: RssSyncPanelProps) {
@@ -42,8 +38,11 @@ export function RssSyncPanel({
       </div>
 
       <div className={styles.actions}>
-        <Button variant="primary" onClick={onSync} disabled={syncing}>
+        <Button variant="primary" onClick={onSync} disabled={syncing || forceSyncing}>
           {syncing ? "Syncing..." : "Sync RSS"}
+        </Button>
+        <Button variant="secondary" onClick={onForceSync} disabled={forceSyncing || syncing}>
+          {forceSyncing ? "Force syncing..." : "Force sync RSS"}
         </Button>
         <Button onClick={onCheck} disabled={checking}>
           {checking ? "Checking..." : "Check feeds"}

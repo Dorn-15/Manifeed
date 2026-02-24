@@ -10,7 +10,6 @@ class RssTag(Base):
     __tablename__ = "rss_tags"
     __table_args__ = (
         sa.UniqueConstraint("name", name="uq_rss_tags_name"),
-        sa.Index("idx_rss_tags_name", "name"),
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)

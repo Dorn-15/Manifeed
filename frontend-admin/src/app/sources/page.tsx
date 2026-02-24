@@ -74,7 +74,7 @@ function formatIngestSummary(result: RssSourceIngestRead): string {
 }
 
 function getFeedLabel(feed: RssFeed): string {
-  const companyName = feed.company_name ?? "Unknown company";
+  const companyName = feed.company?.name ?? "Unknown company";
   const section = feed.section ? ` / ${feed.section}` : "";
   return `#${feed.id} - ${companyName}${section}`;
 }
@@ -266,10 +266,9 @@ export default function AdminSourcesPage() {
   const companyOptions = useMemo<CompanyOption[]>(() => {
     const byId = new Map<number, string>();
     for (const feed of feeds) {
-      if (feed.company_id === null || !feed.company_name) {
-        continue;
+      if (feed.company !== null) {
+        byId.set(feed.company.id, feed.company.name);
       }
-      byId.set(feed.company_id, feed.company_name);
     }
 
     return Array.from(byId.entries())
@@ -544,8 +543,9 @@ export default function AdminSourcesPage() {
                     sourceId={source.id}
                     title={source.title}
                     summary={source.summary}
+                    author={source.author}
                     imageUrl={source.image_url}
-                    companyName={source.company_name}
+                    companyNames={source.company_names}
                     publishedAt={source.published_at}
                     onClick={handleTileClick}
                   />

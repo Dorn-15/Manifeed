@@ -18,16 +18,14 @@ import {
   updateRssCompanyEnabled,
   updateRssFeedEnabled,
 } from "@/services/api/rss.service";
-import type { RssFeed, RssFeedCheckRead, RssSyncRead } from "@/types/rss";
+import type { RssCompany, RssFeed, RssFeedCheckRead, RssSyncRead } from "@/types/rss";
 
 import styles from "./page.module.css";
 
 type CompanyGroup = {
   key: string;
-  id: number | null;
-  slug: string;
+  company: RssCompany | null;
   name: string;
-  enabled: boolean;
   feeds: RssFeed[];
 };
 
@@ -43,29 +41,7 @@ function normalizeCompanyName(companyName: string | null): string {
   if (!candidate) {
     return "unknown";
   }
-
   return candidate;
-}
-
-function normalizeCompanySlug(companyName: string): string {
-  const cleaned = companyName
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-zA-Z0-9']+/g, "");
-
-  if (!cleaned) {
-    return "unknown";
-  }
-
-  return `${cleaned[0].toLowerCase()}${cleaned.slice(1)}`;
-}
-
-function buildCompanyGroupKey(feed: RssFeed, slug: string): string {
-  if (feed.company_id !== null) {
-    return `company:${feed.company_id}`;
-  }
-
-  return `fallback:${slug}`;
 }
 
 function sortFeeds(feeds: RssFeed[], sortMode: SortMode): RssFeed[] {
@@ -91,28 +67,17 @@ function sortFeeds(feeds: RssFeed[], sortMode: SortMode): RssFeed[] {
 }
 
 function formatSyncSummary(syncResult: RssSyncRead): string {
-  return [
-    `action=${syncResult.repository_action}`,
-    `files=${syncResult.processed_files}`,
-    `processed=${syncResult.processed_feeds}`,
-    `created=${syncResult.created_feeds}`,
-    `updated=${syncResult.updated_feeds}`,
-    `deleted=${syncResult.deleted_feeds}`,
-  ].join(" | ");
+  return `action=${syncResult.repository_action}`;
 }
 
 function formatCheckSummary(checkResult: RssFeedCheckRead): string {
-  const summary = [
-    `valid=${checkResult.valid_count}`,
-    `invalid=${checkResult.invalid_count}`,
-    `errors=${checkResult.results.length}`,
-  ];
+  const summary = [`invalid=${checkResult.length}`];
 
-  if (checkResult.results.length === 0) {
+  if (checkResult.length === 0) {
     return summary.join(" | ");
   }
 
-  const errorPreview = checkResult.results
+  const errorPreview = checkResult
     .slice(0, 3)
     .map((result) => `#${result.feed_id}: ${result.error}`)
     .join(" ; ");
@@ -124,18 +89,17 @@ export default function AdminRssPage() {
   const [loadingFeeds, setLoadingFeeds] = useState<boolean>(true);
   const [feedsError, setFeedsError] = useState<string | null>(null);
   const [syncing, setSyncing] = useState<boolean>(false);
+  const [forceSyncing, setForceSyncing] = useState<boolean>(false);
   const [checking, setChecking] = useState<boolean>(false);
   const [popInfo, setPopInfo] = useState<PopInfoState | null>(null);
 
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [enabledFilter, setEnabledFilter] = useState<EnabledFilter>("all");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sortMode, setSortMode] = useState<SortMode>("trust_desc");
 
   const [toggleError, setToggleError] = useState<string | null>(null);
   const [togglingFeedIds, setTogglingFeedIds] = useState<Set<number>>(new Set());
   const [togglingCompanyId, setTogglingCompanyId] = useState<number | null>(null);
-
   const [selectedCompanyKey, setSelectedCompanyKey] = useState<string | null>(null);
 
   const loadFeeds = useCallback(async () => {
@@ -172,20 +136,43 @@ export default function AdminRssPage() {
     }));
   }, []);
 
-  const handleSync = useCallback(async () => {
-    setSyncing(true);
+  const runSync = useCallback(
+    async (force: boolean) => {
+      if (force) {
+        setForceSyncing(true);
+      } else {
+        setSyncing(true);
+      }
 
-    try {
-      const payload = await syncRssFeeds();
-      showPopInfo("Last sync result", formatSyncSummary(payload), "info");
-      await loadFeeds();
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Unexpected error during sync";
-      showPopInfo("Sync error", message, "alert");
-    } finally {
-      setSyncing(false);
-    }
-  }, [loadFeeds, showPopInfo]);
+      try {
+        const payload = await syncRssFeeds(force);
+        showPopInfo(
+          force ? "Last force sync result" : "Last sync result",
+          formatSyncSummary(payload),
+          "info",
+        );
+        await loadFeeds();
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Unexpected error during sync";
+        showPopInfo(force ? "Force sync error" : "Sync error", message, "alert");
+      } finally {
+        if (force) {
+          setForceSyncing(false);
+        } else {
+          setSyncing(false);
+        }
+      }
+    },
+    [loadFeeds, showPopInfo],
+  );
+
+  const handleSync = useCallback(() => {
+    void runSync(false);
+  }, [runSync]);
+
+  const handleForceSync = useCallback(() => {
+    void runSync(true);
+  }, [runSync]);
 
   const handleCheck = useCallback(async () => {
     setChecking(true);
@@ -195,7 +182,7 @@ export default function AdminRssPage() {
       showPopInfo(
         "Last check result",
         formatCheckSummary(payload),
-        payload.invalid_count > 0 ? "alert" : "info",
+        payload.length > 0 ? "alert" : "info",
       );
       await loadFeeds();
     } catch (error) {
@@ -217,8 +204,9 @@ export default function AdminRssPage() {
     try {
       const updatedFeed = await updateRssFeedEnabled(feedId, nextEnabled);
       setFeeds((currentFeeds) =>
-        currentFeeds.map((feed) => (feed.id === feedId ? updatedFeed : feed)),
-      );
+        currentFeeds.map((feed) =>
+          feed.id === updatedFeed.feed_id ? { ...feed, enabled: updatedFeed.enabled } : feed
+        ));
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unable to toggle feed";
       setToggleError(message);
@@ -239,11 +227,16 @@ export default function AdminRssPage() {
       try {
         const updatedCompany = await updateRssCompanyEnabled(companyId, nextEnabled);
         setFeeds((currentFeeds) =>
-          currentFeeds.map((feed) =>
-            feed.company_id === updatedCompany.id
-              ? { ...feed, company_enabled: updatedCompany.enabled }
-              : feed,
-          ),
+          currentFeeds.map((feed) => ({
+            ...feed,
+            company:
+              feed.company !== null && feed.company.id === updatedCompany.company_id
+                ? {
+                    ...feed.company,
+                    enabled: updatedCompany.enabled,
+                  }
+                : feed.company,
+          })),
         );
       } catch (error) {
         const message = error instanceof Error ? error.message : "Unable to toggle company";
@@ -259,23 +252,34 @@ export default function AdminRssPage() {
     const groupedByKey = new Map<string, CompanyGroup>();
 
     for (const feed of feeds) {
-      const companyName = normalizeCompanyName(feed.company_name);
-      const companySlug = normalizeCompanySlug(companyName);
-      const groupKey = buildCompanyGroupKey(feed, companySlug);
-      const currentGroup = groupedByKey.get(groupKey);
+      if (feed.company === null) {
+        const fallbackKey = "company:unknown";
+        const existingGroup = groupedByKey.get(fallbackKey);
+        if (existingGroup) {
+          existingGroup.feeds.push(feed);
+          continue;
+        }
 
-      if (currentGroup) {
-        currentGroup.feeds.push(feed);
-        currentGroup.enabled = currentGroup.enabled && (feed.company_enabled ?? true);
+        groupedByKey.set(fallbackKey, {
+          key: fallbackKey,
+          company: null,
+          name: "Unknown",
+          feeds: [feed],
+        });
+        continue;
+      }
+
+      const groupKey = `company:${feed.company.id}`;
+      const existingGroup = groupedByKey.get(groupKey);
+      if (existingGroup) {
+        existingGroup.feeds.push(feed);
         continue;
       }
 
       groupedByKey.set(groupKey, {
         key: groupKey,
-        id: feed.company_id,
-        slug: companySlug,
-        name: companyName,
-        enabled: feed.company_enabled ?? true,
+        company: feed.company,
+        name: normalizeCompanyName(feed.company.name),
         feeds: [feed],
       });
     }
@@ -285,10 +289,8 @@ export default function AdminRssPage() {
       if (right.feeds.length !== left.feeds.length) {
         return right.feeds.length - left.feeds.length;
       }
-
       return left.name.localeCompare(right.name);
     });
-
     return groups;
   }, [feeds]);
 
@@ -309,18 +311,6 @@ export default function AdminRssPage() {
     [companyGroups, selectedCompanyKey],
   );
 
-  const statusOptions = useMemo(() => {
-    const sourceFeeds = selectedCompany?.feeds ?? [];
-    const uniqueStatuses = new Set(sourceFeeds.map((feed) => feed.status));
-    return ["all", ...Array.from(uniqueStatuses).sort((a, b) => a.localeCompare(b))];
-  }, [selectedCompany]);
-
-  useEffect(() => {
-    if (statusFilter !== "all" && !statusOptions.includes(statusFilter)) {
-      setStatusFilter("all");
-    }
-  }, [statusFilter, statusOptions]);
-
   const filteredSelectedFeeds = useMemo(() => {
     const sourceFeeds = selectedCompany?.feeds ?? [];
     const normalizedQuery = searchQuery.trim().toLowerCase();
@@ -334,15 +324,11 @@ export default function AdminRssPage() {
         return false;
       }
 
-      if (statusFilter !== "all" && feed.status !== statusFilter) {
-        return false;
-      }
-
       if (!normalizedQuery) {
         return true;
       }
 
-      const searchable = [feed.url, feed.section, feed.country, feed.status]
+      const searchable = [feed.url, feed.section]
         .filter((value): value is string => Boolean(value))
         .join(" ")
         .toLowerCase();
@@ -351,7 +337,7 @@ export default function AdminRssPage() {
     });
 
     return sortFeeds(nextFeeds, sortMode);
-  }, [enabledFilter, searchQuery, selectedCompany, sortMode, statusFilter]);
+  }, [enabledFilter, searchQuery, selectedCompany, sortMode]);
 
   return (
     <PageShell className={styles.main}>
@@ -362,10 +348,12 @@ export default function AdminRssPage() {
 
       <RssSyncPanel
         syncing={syncing}
+        forceSyncing={forceSyncing}
         checking={checking}
         loadingFeeds={loadingFeeds}
         feedCount={feeds.length}
         onSync={handleSync}
+        onForceSync={handleForceSync}
         onCheck={handleCheck}
         onRefresh={loadFeeds}
       />
@@ -383,14 +371,14 @@ export default function AdminRssPage() {
       <section className={styles.workspace}>
         <Surface as="aside" className={styles.companyPanel} padding="sm">
           <div className={styles.companyRail}>
-            {companyGroups.map((company) => (
+            {companyGroups.map((companyGroup) => (
               <CompanyCard
-                key={company.key}
+                key={companyGroup.key}
                 className={styles.companyCardItem}
-                companyName={company.name}
-                companySlug={company.slug}
-                isSelected={company.key === selectedCompanyKey}
-                onSelect={() => setSelectedCompanyKey(company.key)}
+                companyName={companyGroup.name}
+                companyIconUrl={companyGroup.company?.icon_url ?? null}
+                isSelected={companyGroup.key === selectedCompanyKey}
+                onSelect={() => setSelectedCompanyKey(companyGroup.key)}
               />
             ))}
           </div>
@@ -400,12 +388,9 @@ export default function AdminRssPage() {
           <FeedToolbar
             searchQuery={searchQuery}
             enabledFilter={enabledFilter}
-            statusFilter={statusFilter}
             sortMode={sortMode}
-            statusOptions={statusOptions}
             onSearchQueryChange={setSearchQuery}
             onEnabledFilterChange={setEnabledFilter}
-            onStatusFilterChange={setStatusFilter}
             onSortModeChange={setSortMode}
           />
 
@@ -415,9 +400,9 @@ export default function AdminRssPage() {
             toggleError={toggleError}
             loadingFeeds={loadingFeeds}
             selectedCompanyName={selectedCompany?.name ?? ""}
-            selectedCompanyId={selectedCompany?.id ?? null}
-            selectedCompanyEnabled={selectedCompany?.enabled ?? true}
-            companyToggling={selectedCompany?.id === togglingCompanyId}
+            selectedCompanyId={selectedCompany?.company?.id ?? null}
+            selectedCompanyEnabled={selectedCompany?.company?.enabled ?? true}
+            companyToggling={selectedCompany?.company?.id === togglingCompanyId}
             togglingFeedIds={togglingFeedIds}
             onToggleFeedEnabled={handleFeedEnabledToggle}
             onToggleCompanyEnabled={handleCompanyEnabledToggle}

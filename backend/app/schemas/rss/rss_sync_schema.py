@@ -13,10 +13,3 @@ class RssRepositorySyncRead(BaseModel):
 
 class RssSyncRead(BaseModel):
     repository_action: RepositoryAction
-    processed_files: int = 0
-    processed_feeds: int = 0
-    created_companies: int = 0
-    created_tags: int = 0
-    created_feeds: int = 0
-    updated_feeds: int = 0
-    deleted_feeds: int = 0

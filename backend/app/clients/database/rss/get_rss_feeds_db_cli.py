@@ -3,8 +3,8 @@ from collections.abc import Sequence
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
-from app.models.rss import RssFeed, RssCompany
-from app.schemas.rss import RssFeedRead
+from app.models.rss import RssCompany, RssFeed
+from app.schemas.rss import RssCompanyRead, RssFeedRead
 
 
 def list_rss_feeds(
@@ -26,12 +26,8 @@ def list_rss_feeds_read(
     db: Session,
     feed_ids: Sequence[int] | None = None,
 ) -> list[RssFeedRead]:
-    query = _rss_feed_read_select().order_by(RssFeed.id.asc())
-    if feed_ids:
-        unique_feed_ids = sorted(set(feed_ids))
-        query = query.where(RssFeed.id.in_(unique_feed_ids))
-    rows = db.execute(query).mappings().all()
-    return [RssFeedRead(**row) for row in rows]
+    feeds = list_rss_feeds(db=db, feed_ids=feed_ids)
+    return [_to_rss_feed_read(feed) for feed in feeds]
 
 
 def list_rss_feeds_by_urls(
@@ -54,7 +50,9 @@ def list_enabled_rss_feeds(
 ) -> list[RssFeed]:
     query = (
         select(RssFeed)
+        .options(selectinload(RssFeed.company))
         .where(RssFeed.enabled.is_(True))
+        .where(RssFeed.fetchprotection != 0)
         .order_by(RssFeed.id.asc())
     )
     if feed_ids:
@@ -80,27 +78,26 @@ def get_rss_feed_by_id(db: Session, feed_id: int) -> RssFeed | None:
     return db.execute(query).scalar_one_or_none()
 
 
-def get_rss_feed_read_by_id(db: Session, feed_id: int) -> RssFeedRead | None:
-    query = _rss_feed_read_select().where(RssFeed.id == feed_id)
-    row = db.execute(query).mappings().one_or_none()
-    return RssFeedRead(**row) if row else None
+def _to_rss_feed_read(feed: RssFeed) -> RssFeedRead:
+    return RssFeedRead(
+        id=feed.id,
+        url=feed.url,
+        section=feed.section,
+        enabled=feed.enabled,
+        trust_score=feed.trust_score,
+        fetchprotection=feed.fetchprotection,
+        company=_to_company_read(feed.company) if feed.company is not None else None,
+    )
 
 
-def _rss_feed_read_select():
-    return (
-        select(
-            RssFeed.id.label("id"),
-            RssFeed.url.label("url"),
-            RssCompany.id.label("company_id"),
-            RssCompany.name.label("company_name"),
-            RssCompany.enabled.label("company_enabled"),
-            RssFeed.section.label("section"),
-            RssFeed.enabled.label("enabled"),
-            RssFeed.status.label("status"),
-            RssFeed.trust_score.label("trust_score"),
-            RssFeed.country.label("country"),
-            RssFeed.icon_url.label("icon_url"),
-        )
-        .select_from(RssFeed)
-        .outerjoin(RssCompany, RssFeed.company_id == RssCompany.id)
+def _to_company_read(company: RssCompany) -> RssCompanyRead:
+    return RssCompanyRead(
+        id=company.id,
+        name=company.name,
+        host=company.host,
+        icon_url=company.icon_url,
+        country=company.country,
+        language=company.language,
+        fetchprotection=company.fetchprotection,
+        enabled=company.enabled,
     )

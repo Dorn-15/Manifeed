@@ -15,8 +15,8 @@ class RssSourceCandidateSchema:
     title: str
     url: str
     summary: str | None = None
+    author: str | None = None
     published_at: datetime | None = None
-    language: str | None = None
     image_url: str | None = None
 
 
@@ -26,10 +26,6 @@ class RssFeedFetchPayloadSchema:
     entries: list[dict[str, Any]] = field(default_factory=list)
     last_modified: datetime | None = None
     error: str | None = None
-
-
-class RssSourceIngestPayload(BaseModel):
-    feed_ids: list[int] | None = Field(default=None, min_length=1)
 
 
 class RssSourceIngestErrorRead(BaseModel):

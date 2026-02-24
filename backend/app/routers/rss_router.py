@@ -4,15 +4,16 @@ from sqlalchemy.orm import Session
 
 from app.errors.rss import RssJobAlreadyRunningError, RssRepositorySyncError
 from app.schemas.rss import (
-    RssCompanyRead,
+    RssCompanyEnabledToggleRead,
+    RssFeedEnabledToggleRead,
     RssEnabledTogglePayload,
-    RssFeedCheckRead,
+    RssFeedCheckResultRead,
     RssFeedRead,
     RssSyncRead,
 )
 from app.services.rss import (
     check_rss_feeds,
-    get_rss_feeds,
+    get_rss_feeds_read,
     get_rss_icon_file_path,
     sync_rss_catalog,
     toggle_rss_company_enabled,
@@ -26,15 +27,15 @@ rss_router = APIRouter(prefix="/rss", tags=["rss"])
 
 @rss_router.get("/", response_model=list[RssFeedRead])
 def read_rss_feeds(db: Session = Depends(get_db_session)) -> list[RssFeedRead]:
-    return get_rss_feeds(db)
+    return get_rss_feeds_read(db)
 
 
-@rss_router.patch("/feeds/{feed_id}/enabled", response_model=RssFeedRead)
+@rss_router.patch("/feeds/{feed_id}/enabled", response_model=RssFeedEnabledToggleRead)
 def update_rss_feed_enabled(
     feed_id: int,
     payload: RssEnabledTogglePayload,
     db: Session = Depends(get_db_session),
-) -> RssFeedRead:
+) -> RssFeedEnabledToggleRead:
     try:
         with job_lock(db, "rss_patch_feed_enabled"):
             return toggle_rss_feed_enabled(
@@ -46,12 +47,12 @@ def update_rss_feed_enabled(
         raise RssJobAlreadyRunningError("RSS feed toggle already running") from exception
 
 
-@rss_router.patch("/companies/{company_id}/enabled", response_model=RssCompanyRead)
+@rss_router.patch("/companies/{company_id}/enabled", response_model=RssCompanyEnabledToggleRead)
 def update_rss_company_enabled(
     company_id: int,
     payload: RssEnabledTogglePayload,
     db: Session = Depends(get_db_session),
-) -> RssCompanyRead:
+) -> RssCompanyEnabledToggleRead:
     try:
         with job_lock(db, "rss_patch_company_enabled"):
             return toggle_rss_company_enabled(
@@ -64,21 +65,24 @@ def update_rss_company_enabled(
 
 
 @rss_router.post("/sync", response_model=RssSyncRead)
-def sync_rss_feeds(db: Session = Depends(get_db_session)) -> RssSyncRead:
+def sync_rss_feeds(
+    force: bool = Query(default=False, description="Force full catalog reprocessing"),
+    db: Session = Depends(get_db_session),
+) -> RssSyncRead:
     try:
         with job_lock(db, "rss_sync"):
-            return sync_rss_catalog(db)
+            return sync_rss_catalog(db, force=force)
     except GitRepositorySyncError as exception:
         raise RssRepositorySyncError("RSS repository sync failed") from exception
     except JobAlreadyRunning as exception:
         raise RssJobAlreadyRunningError("RSS sync already running") from exception
 
 
-@rss_router.post("/feeds/check", response_model=RssFeedCheckRead)
+@rss_router.post("/feeds/check", response_model=list[RssFeedCheckResultRead])
 async def check_rss_feed_urls(
     feed_ids: list[int] | None = Query(default=None),
     db: Session = Depends(get_db_session),
-) -> RssFeedCheckRead:
+) -> list[RssFeedCheckResultRead]:
     try:
         with job_lock(db, "rss_feed_check"):
             return await check_rss_feeds(db, feed_ids=feed_ids)
@@ -88,9 +92,4 @@ async def check_rss_feed_urls(
 
 @rss_router.get("/img/{icon_url:path}")
 def read_rss_icon(icon_url: str) -> FileResponse:
-    icon_file_path = get_rss_icon_file_path(icon_url)
-    return FileResponse(
-        path=icon_file_path,
-        media_type="image/svg+xml",
-        filename=icon_file_path.name,
-    )
+    return get_rss_icon_file_path(icon_url)

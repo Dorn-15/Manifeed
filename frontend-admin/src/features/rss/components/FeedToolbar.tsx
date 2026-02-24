@@ -8,12 +8,9 @@ export type SortMode = "trust_desc" | "trust_asc" | "url_asc" | "url_desc";
 type FeedToolbarProps = {
   searchQuery: string;
   enabledFilter: EnabledFilter;
-  statusFilter: string;
   sortMode: SortMode;
-  statusOptions: string[];
   onSearchQueryChange: (value: string) => void;
   onEnabledFilterChange: (value: EnabledFilter) => void;
-  onStatusFilterChange: (value: string) => void;
   onSortModeChange: (value: SortMode) => void;
 };
 
@@ -27,12 +24,9 @@ function parseSortMode(value: string): SortMode | null {
 export function FeedToolbar({
   searchQuery,
   enabledFilter,
-  statusFilter,
   sortMode,
-  statusOptions,
   onSearchQueryChange,
   onEnabledFilterChange,
-  onStatusFilterChange,
   onSortModeChange,
 }: FeedToolbarProps) {
   return (
@@ -42,7 +36,7 @@ export function FeedToolbar({
           id="rss-search"
           value={searchQuery}
           onChange={(event) => onSearchQueryChange(event.target.value)}
-          placeholder="URL, section, country, status..."
+          placeholder="URL, section..."
         />
       </Field>
 
@@ -65,20 +59,6 @@ export function FeedToolbar({
         </div>
 
         <div className={styles.inlineFields}>
-          <Field label="Status" htmlFor="rss-status" className={styles.inlineField}>
-            <SelectInput
-              id="rss-status"
-              value={statusFilter}
-              onChange={(event) => onStatusFilterChange(event.target.value)}
-            >
-              {statusOptions.map((statusOption) => (
-                <option key={statusOption} value={statusOption}>
-                  {statusOption}
-                </option>
-                ))}
-            </SelectInput>
-          </Field>
-
           <Field label="Sort by" htmlFor="rss-sort" className={styles.inlineField}>
             <SelectInput
               id="rss-sort"

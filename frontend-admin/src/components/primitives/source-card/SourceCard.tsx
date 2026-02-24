@@ -6,15 +6,19 @@ type SourceCardProps = {
   sourceId: number;
   title: string;
   summary: string | null;
+  author: string | null;
   imageUrl: string | null;
-  companyName: string | null;
+  companyNames: string[];
   publishedAt: string | null;
   onClick: (sourceId: number) => void;
   className?: string;
 };
 
-function getCompanyName(companyName: string | null): string {
-  return companyName ?? "Unknown company";
+function getCompanyName(companyNames: string[]): string {
+  if (companyNames.length === 0) {
+    return "Unknown company";
+  }
+  return companyNames.join(", ");
 }
 
 function joinClassNames(...classes: Array<string | undefined>): string {
@@ -25,13 +29,15 @@ export function SourceCard({
   sourceId,
   title,
   summary,
+  author,
   imageUrl,
-  companyName,
+  companyNames,
   publishedAt,
   onClick,
   className,
 }: SourceCardProps) {
-  const displayCompanyName = getCompanyName(companyName);
+  const displayCompanyName = getCompanyName(companyNames);
+  const displayAuthor = author?.trim() ?? "";
   const publishedDate = formatSourceDate(publishedAt, "split");
   const bannerUrl = imageUrl?.trim() ?? "";
   const hasBanner = bannerUrl.length > 0;
@@ -51,6 +57,7 @@ export function SourceCard({
 
       <div className={styles.body}>
         <p className={styles.company}>{displayCompanyName}.</p>
+        {displayAuthor ? <p className={styles.author}>By {displayAuthor}.</p> : null}
         <div className={styles.contentContainer}>
           <h3>{title}</h3>
           <p className={styles.summary}>{summary ?? "No summary available."}</p>

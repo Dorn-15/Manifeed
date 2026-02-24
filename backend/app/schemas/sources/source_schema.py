@@ -7,10 +7,11 @@ class RssSourceRead(BaseModel):
     id: int
     title: str
     summary: str | None = None
+    author: str | None = None
     url: str
     published_at: datetime | None = None
     image_url: str | None = None
-    company_name: str | None = None
+    company_names: list[str] = Field(default_factory=list)
 
 
 class RssSourcePageRead(BaseModel):
@@ -24,8 +25,9 @@ class RssSourceDetailRead(BaseModel):
     id: int
     title: str
     summary: str | None = None
+    author: str | None = None
     url: str
     published_at: datetime | None = None
     image_url: str | None = None
-    company_name: str | None = None
+    company_names: list[str] = Field(default_factory=list)
     feed_sections: list[str] = Field(default_factory=list)

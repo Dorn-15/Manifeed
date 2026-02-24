@@ -2,7 +2,6 @@ from .source_ingest_schema import (
     RssFeedFetchPayloadSchema,
     RssSourceCandidateSchema,
     RssSourceIngestErrorRead,
-    RssSourceIngestPayload,
     RssSourceIngestRead,
 )
 from .source_schema import (
@@ -15,7 +14,6 @@ __all__ = [
     "RssFeedFetchPayloadSchema",
     "RssSourceCandidateSchema",
     "RssSourceIngestErrorRead",
-    "RssSourceIngestPayload",
     "RssSourceIngestRead",
     "RssSourceDetailRead",
     "RssSourcePageRead",

@@ -1,8 +1,9 @@
 import { apiRequest, getApiBaseUrl } from "@/services/api/client";
 import type {
-  RssCompany,
+  RssCompanyEnabledToggleRead,
   RssFeed,
   RssFeedCheckRead,
+  RssFeedEnabledToggleRead,
   RssSyncRead,
 } from "@/types/rss";
 
@@ -31,8 +32,9 @@ export async function listRssFeeds(): Promise<RssFeed[]> {
   return apiRequest<RssFeed[]>("/rss/");
 }
 
-export async function syncRssFeeds(): Promise<RssSyncRead> {
-  return apiRequest<RssSyncRead>("/rss/sync", {
+export async function syncRssFeeds(force = false): Promise<RssSyncRead> {
+  const path = force ? "/rss/sync?force=true" : "/rss/sync";
+  return apiRequest<RssSyncRead>(path, {
     method: "POST",
   });
 }
@@ -52,8 +54,11 @@ export async function checkRssFeeds(feedIds?: number[]): Promise<RssFeedCheckRea
   });
 }
 
-export async function updateRssFeedEnabled(feedId: number, enabled: boolean): Promise<RssFeed> {
-  return apiRequest<RssFeed>(`/rss/feeds/${feedId}/enabled`, {
+export async function updateRssFeedEnabled(
+  feedId: number,
+  enabled: boolean,
+): Promise<RssFeedEnabledToggleRead> {
+  return apiRequest<RssFeedEnabledToggleRead>(`/rss/feeds/${feedId}/enabled`, {
     method: "PATCH",
     body: JSON.stringify({ enabled }),
   });
@@ -62,8 +67,8 @@ export async function updateRssFeedEnabled(feedId: number, enabled: boolean): Pr
 export async function updateRssCompanyEnabled(
   companyId: number,
   enabled: boolean,
-): Promise<RssCompany> {
-  return apiRequest<RssCompany>(`/rss/companies/${companyId}/enabled`, {
+): Promise<RssCompanyEnabledToggleRead> {
+  return apiRequest<RssCompanyEnabledToggleRead>(`/rss/companies/${companyId}/enabled`, {
     method: "PATCH",
     body: JSON.stringify({ enabled }),
   });

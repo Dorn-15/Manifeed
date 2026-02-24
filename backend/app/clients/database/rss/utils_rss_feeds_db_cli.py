@@ -9,7 +9,6 @@ from app.schemas.rss import RssFeedUpsertSchema
 
 def upsert_feed(
     db: Session,
-    company: RssCompany,
     payload: RssFeedUpsertSchema,
     tags: Sequence[RssTag],
     existing_feed: RssFeed | None = None,
@@ -22,30 +21,43 @@ def upsert_feed(
     if existing_feed is None:
         new_feed = RssFeed(
             url=payload.url,
-            company=company,
             section=payload.section,
             enabled=payload.enabled,
-            status="unchecked",
             trust_score=payload.trust_score,
-            country=payload.country,
-            icon_url=payload.icon_url,
-            parsing_config=payload.parsing_config,
+            fetchprotection=payload.fetchprotection if payload.fetchprotection is not None else 1,
             tags=list(tags),
         )
         db.add(new_feed)
         db.flush()
         return new_feed, True
 
-    existing_feed.company = company
     existing_feed.section = payload.section
-    if existing_feed.status != "invalid":
-        existing_feed.enabled = payload.enabled
+    existing_feed.enabled = payload.enabled
     existing_feed.trust_score = payload.trust_score
-    existing_feed.country = payload.country
-    existing_feed.icon_url = payload.icon_url
-    existing_feed.parsing_config = payload.parsing_config
+    if payload.fetchprotection is not None:
+        existing_feed.fetchprotection = max(existing_feed.fetchprotection, payload.fetchprotection)
     existing_feed.tags = list(tags)
     return existing_feed, False
+
+
+def link_company_to_feed(
+    db: Session,
+    *,
+    company_id: int,
+    feed_id: int,
+) -> bool:
+    feed = db.execute(
+        select(RssFeed).where(RssFeed.id == feed_id)
+    ).scalar_one_or_none()
+    if feed is None:
+        return False
+
+    if feed.company_id == company_id:
+        return False
+
+    feed.company_id = company_id
+    return True
+
 
 def set_rss_feed_enabled(db: Session, feed_id: int, enabled: bool) -> bool:
     result = db.execute(
@@ -53,19 +65,30 @@ def set_rss_feed_enabled(db: Session, feed_id: int, enabled: bool) -> bool:
     )
     return result.rowcount > 0
 
+
+def set_rss_company_enabled(db: Session, company_id: int, enabled: bool) -> bool:
+    result = db.execute(
+        update(RssCompany).where(RssCompany.id == company_id).values(enabled=enabled)
+    )
+    return result.rowcount > 0
+
+
 def delete_company_feeds_not_in_urls(
     db: Session,
     company_id: int,
     expected_urls: set[str],
 ) -> int:
-    delete_query = (
-        delete(RssFeed)
+    linked_feed_ids_query = (
+        select(RssFeed.id)
         .where(RssFeed.company_id == company_id)
-        .execution_options(synchronize_session=False)
     )
     if expected_urls:
-        delete_query = delete_query.where(~RssFeed.url.in_(expected_urls))
+        linked_feed_ids_query = linked_feed_ids_query.where(~RssFeed.url.in_(expected_urls))
 
-    result = db.execute(delete_query)
-    rowcount = result.rowcount if result.rowcount is not None else 0
-    return max(rowcount, 0)
+    linked_feed_ids = list(db.execute(linked_feed_ids_query).scalars().all())
+    if not linked_feed_ids:
+        return 0
+
+    db.execute(delete(RssFeed).where(RssFeed.id.in_(linked_feed_ids)))
+
+    return len(linked_feed_ids)

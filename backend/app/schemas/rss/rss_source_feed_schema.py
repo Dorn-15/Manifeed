@@ -1,5 +1,3 @@
-from typing import Any
-
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
@@ -9,11 +7,9 @@ class RssSourceFeedSchema(BaseModel):
     url: str = Field(min_length=1, max_length=500)
     title: str = Field(min_length=1)
     tags: list[str] = Field(default_factory=list)
-    trust_score: float = Field(ge=0.0, le=1.0)
-    country: str | None = None
     enabled: bool = True
-    img: str | None = Field(default=None, max_length=500)
-    parsing_config: dict[str, Any] = Field(default_factory=dict)
+    trust_score: float = Field(default=0.5, ge=0.0, le=1.0)
+    fetchprotection: int | None = Field(default=None, ge=0, le=3)
 
     @field_validator("tags")
     @classmethod
@@ -24,3 +20,15 @@ class RssSourceFeedSchema(BaseModel):
             if cleaned_value:
                 cleaned_values.append(cleaned_value)
         return cleaned_values
+
+
+class RssSourceCatalogSchema(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    company: str = Field(min_length=1, max_length=100)
+    host: str | None = Field(default=None, min_length=1, max_length=255)
+    img: str | None = Field(default=None, max_length=500)
+    country: str | None = Field(default=None, min_length=2, max_length=2)
+    language: str | None = Field(default=None, min_length=2, max_length=2)
+    fetchprotection: int = Field(default=1, ge=0, le=3)
+    feeds: list[RssSourceFeedSchema] = Field(default_factory=list)

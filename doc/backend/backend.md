@@ -32,13 +32,14 @@ FastAPI API server and database access layer for health and RSS workflows.
 - `GET /rss/`
   - Returns a list of RSS feeds (`id`, `url`, `company_name`, `section`, `enabled`, `status`, `trust_score`, `country`, `icon_url`)
 - `POST /rss/sync`
-  - Syncs RSS catalog from git repository and returns counters (`processed_files`, `processed_feeds`, `created_*`, `updated_feeds`, `deleted_feeds`)
+  - Syncs RSS catalog from git repository and returns only `repository_action`
+  - Supports `?force=true` to reprocess all catalog files even when git is up to date
 - `GET /rss/img/{icon_url:path}`
   - Serves local SVG icon files from the synced RSS repository
 
 ## RSS Sync Behavior
 - Clones or updates the configured RSS git repository
-- Processes only changed `.json` catalog files on pull (all `.json` files on first clone)
+- Processes only changed `.json` catalog files on pull (all `.json` files on first clone or when `force=true`)
 - Upserts companies, tags and feeds
 - Deletes stale feeds not present in a company's source catalog
 - Wraps sync in a DB transaction (`commit` on success, `rollback` on error)

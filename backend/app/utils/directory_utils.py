@@ -1,11 +1,12 @@
 from pathlib import Path
+from pathlib import PurePosixPath
 
 from .normalize_utils import normalize_file_extension
 
 def is_empty_directory(path: Path) -> bool:
     return path.exists() and path.is_dir() and not any(path.iterdir())
 
-def list_files_with_extension(
+def list_files_on_dir_with_ext(
     repository_path: Path,
     file_extension: str = "*",
 ) -> list[str]:
@@ -15,4 +16,4 @@ def list_files_with_extension(
         for file_path in repository_path.rglob(f"*{normalized_extension}")
         if ".git" not in file_path.parts
     ]
-    return sorted(catalog_files)
+    return (catalog_files)

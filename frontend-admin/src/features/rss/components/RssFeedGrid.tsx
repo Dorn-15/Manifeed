@@ -10,7 +10,11 @@ type RssFeedGridProps = {
   onToggleFeedEnabled: (feedId: number, nextEnabled: boolean) => void | Promise<void>;
 };
 
-export function RssFeedGrid({ feeds, togglingFeedIds, onToggleFeedEnabled }: RssFeedGridProps) {
+export function RssFeedGrid({
+  feeds,
+  togglingFeedIds,
+  onToggleFeedEnabled,
+}: RssFeedGridProps) {
   if (feeds.length === 0) {
     return <EmptyState title="No matching feeds" description="Adjust the filters for the selected company." />;
   }

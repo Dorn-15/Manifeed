@@ -135,6 +135,14 @@
   line-height: var(--subtitle-r-line-height);
 }
 
+.metaText {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--text-r-size);
+  font-weight: var(--text-r-weight);
+  line-height: var(--text-r-line-height);
+}
+
 .sectionTags {
   display: flex;
   gap: var(--space-2);

@@ -1,10 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, Path, Query
+from fastapi import APIRouter, Depends, Path, Query
 from sqlalchemy.orm import Session
 
 from app.errors.rss import RssJobAlreadyRunningError
 from app.schemas.sources import (
     RssSourceDetailRead,
-    RssSourceIngestPayload,
     RssSourceIngestRead,
     RssSourcePageRead,
 )
@@ -62,28 +61,21 @@ def read_sources_by_company(
     )
 
 
-@sources_router.post("/ingest", response_model=RssSourceIngestRead)
-async def ingest_sources(
-    payload: RssSourceIngestPayload | None = None,
-    db: Session = Depends(get_db_session),
-) -> RssSourceIngestRead:
-    feed_ids = payload.feed_ids if payload else None
-    try:
-        with job_lock(db, "sources_ingest"):
-            return await ingest_rss_sources(db, feed_ids=feed_ids)
-    except JobAlreadyRunning as exception:
-        raise RssJobAlreadyRunningError("Sources ingest already running") from exception
-
-
 @sources_router.get("/{source_id}", response_model=RssSourceDetailRead)
 def read_source_by_id(
     source_id: int = Path(ge=1),
     db: Session = Depends(get_db_session),
 ) -> RssSourceDetailRead:
-    source = get_rss_source_by_id(db, source_id=source_id)
-    if source is None:
-        raise HTTPException(
-            status_code=404,
-            detail=f"RSS source {source_id} not found",
-        )
-    return source
+    return get_rss_source_by_id(db, source_id=source_id)
+
+
+@sources_router.post("/ingest", response_model=RssSourceIngestRead)
+async def ingest_sources(
+    feed_ids: list[int] | None = Query(default=None, min_length=1),
+    db: Session = Depends(get_db_session),
+) -> RssSourceIngestRead:
+    try:
+        with job_lock(db, "sources_ingest"):
+            return await ingest_rss_sources(db, feed_ids=feed_ids)
+    except JobAlreadyRunning as exception:
+        raise RssJobAlreadyRunningError("Sources ingest already running") from exception
