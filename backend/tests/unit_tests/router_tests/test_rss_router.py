@@ -4,9 +4,9 @@ from fastapi.responses import FileResponse
 
 from app.schemas.rss import (
     RssCompanyEnabledToggleRead,
-    RssFeedCheckResultRead,
     RssFeedEnabledToggleRead,
     RssFeedRead,
+    RssScrapeJobQueuedRead,
     RssSyncRead,
 )
 from app.utils import JobAlreadyRunning
@@ -91,35 +91,21 @@ def test_patch_company_enabled_route_delegates_to_service(client, mock_db_sessio
 
 
 def test_check_rss_feeds_route_passes_feed_ids(client, mock_db_session, monkeypatch) -> None:
-    monkeypatch.setattr(rss_router_module, "job_lock", _no_op_job_lock)
-
-    async def fake_check_rss_feeds(db, feed_ids):
+    async def fake_enqueue_rss_feed_check_job(db, feed_ids):
         assert db is mock_db_session
         assert feed_ids == [7, 8]
-        return [
-            RssFeedCheckResultRead(
-                feed_id=8,
-                url="https://example.com/rss/8",
-                status="invalid",
-                error="timeout",
-                fetchprotection=0,
-            )
-        ]
+        return RssScrapeJobQueuedRead(job_id="job-123", status="queued")
 
-    monkeypatch.setattr(rss_router_module, "check_rss_feeds", fake_check_rss_feeds)
+    monkeypatch.setattr(
+        rss_router_module,
+        "enqueue_rss_feed_check_job",
+        fake_enqueue_rss_feed_check_job,
+    )
 
     response = client.post("/rss/feeds/check?feed_ids=7&feed_ids=8")
 
     assert response.status_code == 200
-    assert response.json() == [
-        {
-            "feed_id": 8,
-            "url": "https://example.com/rss/8",
-            "status": "invalid",
-            "error": "timeout",
-            "fetchprotection": 0,
-        }
-    ]
+    assert response.json() == {"job_id": "job-123", "status": "queued"}
 
 
 def test_sync_rss_route_returns_409_when_job_is_running(client, monkeypatch) -> None:

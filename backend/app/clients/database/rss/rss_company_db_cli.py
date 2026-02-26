@@ -45,7 +45,7 @@ def get_or_create_company(
         icon_url=icon_url,
         country=normalize_country(country),
         language=normalize_country(language),
-        fetchprotection=max(0, min(3, fetchprotection)),
+        fetchprotection=max(0, min(2, fetchprotection)),
         enabled=True,
     )
     db.add(new_company)
@@ -70,4 +70,4 @@ def _update_company_metadata(
     )
     company.country = normalize_country(country)
     company.language = normalize_country(language)
-    company.fetchprotection = max(0, min(3, fetchprotection))
+    company.fetchprotection = max(0, min(2, fetchprotection))

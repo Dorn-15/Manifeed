@@ -9,6 +9,7 @@ from .custom_exceptions import (
     RssFeedToggleForbiddenError,
     RssIconNotFoundError,
     RssJobAlreadyRunningError,
+    RssJobQueuePublishError,
     RssRepositorySyncError,
 )
 
@@ -79,5 +80,15 @@ def rss_job_already_running_error_handler(
 ) -> JSONResponse:
     return JSONResponse(
         status_code=status.HTTP_409_CONFLICT,
+        content={"message": str(exception)},
+    )
+
+
+def rss_job_queue_publish_error_handler(
+    _: Request,
+    exception: RssJobQueuePublishError,
+) -> JSONResponse:
+    return JSONResponse(
+        status_code=status.HTTP_502_BAD_GATEWAY,
         content={"message": str(exception)},
     )

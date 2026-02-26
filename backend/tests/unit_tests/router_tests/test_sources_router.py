@@ -4,7 +4,7 @@ from fastapi import HTTPException
 
 from app.schemas.sources import (
     RssSourceDetailRead,
-    RssSourceIngestRead,
+    RssSourcePartitionMaintenanceRead,
     RssSourcePageRead,
     RssSourceRead,
 )
@@ -65,39 +65,71 @@ def test_read_source_by_id_returns_404_when_not_found(client, mock_db_session, m
 
 
 def test_ingest_sources_route_passes_feed_ids(client, mock_db_session, monkeypatch) -> None:
-    monkeypatch.setattr(sources_router_module, "job_lock", _no_op_job_lock)
-
-    async def fake_ingest_rss_sources(db, feed_ids=None):
+    async def fake_enqueue_sources_ingest_job(db, feed_ids=None):
         assert db is mock_db_session
         assert feed_ids == [3, 4]
-        return RssSourceIngestRead(
-            feeds_processed=1,
-            feeds_skipped=0,
-            sources_created=2,
-            sources_updated=1,
-            duration_ms=10,
-        )
+        return {"job_id": "job-456", "status": "queued"}
 
-    monkeypatch.setattr(sources_router_module, "ingest_rss_sources", fake_ingest_rss_sources)
+    monkeypatch.setattr(
+        sources_router_module,
+        "enqueue_sources_ingest_job",
+        fake_enqueue_sources_ingest_job,
+    )
 
     response = client.post("/sources/ingest?feed_ids=3&feed_ids=4")
 
     assert response.status_code == 200
-    assert response.json()["feeds_processed"] == 1
+    assert response.json() == {"job_id": "job-456", "status": "queued"}
 
 
-def test_ingest_sources_route_returns_409_when_job_is_running(client, monkeypatch) -> None:
+def test_repartition_sources_default_route_returns_service_payload(
+    client,
+    mock_db_session,
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(sources_router_module, "job_lock", _no_op_job_lock)
+
+    def fake_repartition_rss_source_partitions(db):
+        assert db is mock_db_session
+        return RssSourcePartitionMaintenanceRead(
+            source_default_rows_repartitioned=5,
+            source_feed_default_rows_repartitioned=7,
+            source_weekly_partitions_created=2,
+            source_feed_weekly_partitions_created=2,
+            weeks_covered=2,
+        )
+
+    monkeypatch.setattr(
+        sources_router_module,
+        "repartition_rss_source_partitions",
+        fake_repartition_rss_source_partitions,
+    )
+
+    response = client.post("/sources/partitions/repartition-default")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "status": "completed",
+        "source_default_rows_repartitioned": 5,
+        "source_feed_default_rows_repartitioned": 7,
+        "source_weekly_partitions_created": 2,
+        "source_feed_weekly_partitions_created": 2,
+        "weeks_covered": 2,
+    }
+
+
+def test_repartition_sources_default_route_returns_409_when_job_is_running(client, monkeypatch) -> None:
     @contextmanager
     def busy_job_lock(_db, _name):
-        raise JobAlreadyRunning("sources_ingest")
+        raise JobAlreadyRunning("sources_repartition_partitions")
         yield
 
     monkeypatch.setattr(sources_router_module, "job_lock", busy_job_lock)
 
-    response = client.post("/sources/ingest")
+    response = client.post("/sources/partitions/repartition-default")
 
     assert response.status_code == 409
-    assert response.json() == {"message": "Sources ingest already running"}
+    assert response.json() == {"message": "Sources partition repartition already running"}
 
 
 def test_read_sources_route_returns_422_for_invalid_limit(client) -> None:

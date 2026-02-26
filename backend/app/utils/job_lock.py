@@ -19,9 +19,6 @@ _PG_LOCK_IDS: dict[str, int] = {
     "rss_patch_feed_enabled": 83001,
     "rss_patch_company_enabled": 83002,
     "rss_sync": 83003,
-    "rss_feed_check": 83004,
-    "sources_ingest": 83005,
-    "rss_sources_ingest": 83005,
 }
 
 

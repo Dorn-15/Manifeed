@@ -34,9 +34,9 @@ def _normalize_fetchprotection(
     fetchprotection: int | None,
     default_value: int,
 ) -> int:
-    if isinstance(fetchprotection, int) and 0 <= fetchprotection <= 3:
+    if isinstance(fetchprotection, int) and 0 <= fetchprotection <= 2:
         return fetchprotection
-    return max(0, min(3, default_value))
+    return max(0, min(2, default_value))
 
 
 def _normalize_tags(tags: list[str]) -> list[str]:

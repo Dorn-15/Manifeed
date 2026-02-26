@@ -3,7 +3,7 @@ from collections.abc import Sequence
 from sqlalchemy import delete, select, update
 from sqlalchemy.orm import Session
 
-from app.models.rss import RssCompany, RssFeed, RssTag
+from app.models.rss import RssCompany, RssFeed, RssFeedScraping, RssTag
 from app.schemas.rss import RssFeedUpsertSchema
 
 
@@ -19,12 +19,13 @@ def upsert_feed(
         ).scalar_one_or_none()
 
     if existing_feed is None:
+        initial_fetchprotection = _normalize_fetchprotection(payload.fetchprotection)
         new_feed = RssFeed(
             url=payload.url,
             section=payload.section,
             enabled=payload.enabled,
             trust_score=payload.trust_score,
-            fetchprotection=payload.fetchprotection if payload.fetchprotection is not None else 1,
+            scraping=RssFeedScraping(fetchprotection=initial_fetchprotection),
             tags=list(tags),
         )
         db.add(new_feed)
@@ -34,8 +35,12 @@ def upsert_feed(
     existing_feed.section = payload.section
     existing_feed.enabled = payload.enabled
     existing_feed.trust_score = payload.trust_score
+    scraping = _get_or_create_feed_scraping(existing_feed)
     if payload.fetchprotection is not None:
-        existing_feed.fetchprotection = max(existing_feed.fetchprotection, payload.fetchprotection)
+        scraping.fetchprotection = max(
+            _normalize_fetchprotection(scraping.fetchprotection),
+            _normalize_fetchprotection(payload.fetchprotection),
+        )
     existing_feed.tags = list(tags)
     return existing_feed, False
 
@@ -92,3 +97,19 @@ def delete_company_feeds_not_in_urls(
     db.execute(delete(RssFeed).where(RssFeed.id.in_(linked_feed_ids)))
 
     return len(linked_feed_ids)
+
+
+def _normalize_fetchprotection(fetchprotection: int | None) -> int:
+    if isinstance(fetchprotection, int) and 0 <= fetchprotection <= 2:
+        return fetchprotection
+    return 1
+
+
+def _get_or_create_feed_scraping(feed: RssFeed) -> RssFeedScraping:
+    scraping = feed.scraping
+    if scraping is not None:
+        return scraping
+
+    scraping = RssFeedScraping(fetchprotection=1)
+    feed.scraping = scraping
+    return scraping

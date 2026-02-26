@@ -7,12 +7,12 @@ from app.schemas.rss import (
     RssCompanyEnabledToggleRead,
     RssFeedEnabledToggleRead,
     RssEnabledTogglePayload,
-    RssFeedCheckResultRead,
     RssFeedRead,
+    RssScrapeJobQueuedRead,
     RssSyncRead,
 )
 from app.services.rss import (
-    check_rss_feeds,
+    enqueue_rss_feed_check_job,
     get_rss_feeds_read,
     get_rss_icon_file_path,
     sync_rss_catalog,
@@ -78,16 +78,12 @@ def sync_rss_feeds(
         raise RssJobAlreadyRunningError("RSS sync already running") from exception
 
 
-@rss_router.post("/feeds/check", response_model=list[RssFeedCheckResultRead])
+@rss_router.post("/feeds/check", response_model=RssScrapeJobQueuedRead)
 async def check_rss_feed_urls(
     feed_ids: list[int] | None = Query(default=None),
     db: Session = Depends(get_db_session),
-) -> list[RssFeedCheckResultRead]:
-    try:
-        with job_lock(db, "rss_feed_check"):
-            return await check_rss_feeds(db, feed_ids=feed_ids)
-    except JobAlreadyRunning as exception:
-        raise RssJobAlreadyRunningError("RSS feed check already running") from exception
+) -> RssScrapeJobQueuedRead:
+    return await enqueue_rss_feed_check_job(db, feed_ids=feed_ids)
 
 
 @rss_router.get("/img/{icon_url:path}")

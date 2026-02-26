@@ -22,7 +22,12 @@ class RssSource(Base):
         },
     )
 
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(
+        sa.Integer(),
+        primary_key=True,
+        autoincrement=True,
+        server_default=sa.text("nextval('rss_sources_id_seq'::regclass)"),
+    )
     title: Mapped[str] = mapped_column(sa.String(500), nullable=False)
     summary: Mapped[str | None] = mapped_column(sa.Text(), nullable=True)
     author: Mapped[str | None] = mapped_column(sa.String(255), nullable=True)
@@ -31,7 +36,7 @@ class RssSource(Base):
         sa.DateTime(timezone=True),
         primary_key=True,
         nullable=False,
-        server_default=sa.func.now(),
+        server_default=sa.text("TIMESTAMPTZ '1970-01-01 00:00:00+00'"),
     )
     image_url: Mapped[str | None] = mapped_column(sa.String(1000), nullable=True)
 

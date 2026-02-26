@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+from datetime import datetime, timezone
 
 from sqlalchemy import and_, func, select
 from sqlalchemy.orm import Session, selectinload
@@ -8,6 +9,8 @@ from sqlalchemy.orm import Session, selectinload
 from app.models.rss import RssFeed
 from app.models.sources import RssSource, RssSourceFeed
 from app.schemas.sources import RssSourceDetailRead, RssSourceRead
+
+SOURCE_PUBLISHED_AT_FALLBACK = datetime(1970, 1, 1, tzinfo=timezone.utc)
 
 
 def list_rss_sources_read(
@@ -58,7 +61,7 @@ def list_rss_sources_read(
                 summary=source.summary,
                 author=source.author,
                 url=source.url,
-                published_at=source.published_at,
+                published_at=_to_public_published_at(source.published_at),
                 image_url=source.image_url,
                 company_names=_collect_company_names(source),
             )
@@ -81,7 +84,7 @@ def list_rss_sources_by_urls(
         .where(RssSource.url.in_(unique_urls))
         .order_by(
             RssSource.url.asc(),
-            RssSource.published_at.desc(),
+            RssSource.published_at.desc().nullslast(),
             RssSource.id.desc(),
         )
     )
@@ -123,7 +126,7 @@ def get_rss_source_detail_read_by_id(
         summary=source.summary,
         author=source.author,
         url=source.url,
-        published_at=source.published_at,
+        published_at=_to_public_published_at(source.published_at),
         image_url=source.image_url,
         company_names=_collect_company_names(source),
         feed_sections=sorted(feed_sections),
@@ -180,3 +183,17 @@ def _collect_company_names(source: RssSource) -> list[str]:
         if feed.company.name:
             company_names.add(feed.company.name)
     return sorted(company_names)
+
+
+def _to_public_published_at(published_at: datetime | None) -> datetime | None:
+    if published_at is None:
+        return None
+
+    normalized_published_at = (
+        published_at.replace(tzinfo=timezone.utc)
+        if published_at.tzinfo is None
+        else published_at.astimezone(timezone.utc)
+    )
+    if normalized_published_at == SOURCE_PUBLISHED_AT_FALLBACK:
+        return None
+    return normalized_published_at

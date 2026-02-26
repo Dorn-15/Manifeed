@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 import subprocess
 from typing import Literal
+from urllib.parse import urlparse
 
 from .directory_utils import is_empty_directory
 from .normalize_utils import normalize_file_extension
@@ -91,15 +92,22 @@ def _validate_repository_remote(repository_path: Path, expected_repository_url: 
         ["config", "--get", "remote.origin.url"],
         cwd=repository_path,
     )
-    if current_remote_url != expected_repository_url:
+    normalized_current_remote_url = _normalize_repository_url(current_remote_url)
+    normalized_expected_remote_url = _normalize_repository_url(expected_repository_url)
+    if normalized_current_remote_url != normalized_expected_remote_url:
         raise GitRepositorySyncError(
             "Repository remote mismatch for "
             f"{repository_path}. Expected {expected_repository_url}, got {current_remote_url}."
         )
+    if current_remote_url != expected_repository_url:
+        run_git_command(
+            ["remote", "set-url", "origin", expected_repository_url],
+            cwd=repository_path,
+        )
 
 
 def run_git_command(command: list[str], cwd: Path | None) -> str:
-    full_command = ["git", *command]
+    full_command = _build_git_command(command=command, cwd=cwd)
     try:
         process = subprocess.run(
             full_command,
@@ -114,3 +122,42 @@ def run_git_command(command: list[str], cwd: Path | None) -> str:
             f"Git command failed ({' '.join(full_command)}): {stderr}"
         ) from exception
     return process.stdout.strip()
+
+
+def _build_git_command(command: list[str], cwd: Path | None) -> list[str]:
+    if cwd is None:
+        return ["git", *command]
+
+    safe_directory = _resolve_git_safe_directory(cwd)
+    return ["git", "-c", f"safe.directory={safe_directory}", *command]
+
+
+def _resolve_git_safe_directory(cwd: Path) -> str:
+    normalized_cwd = cwd.expanduser()
+    for candidate in (normalized_cwd, *normalized_cwd.parents):
+        if (candidate / ".git").exists():
+            return str(candidate)
+    return str(normalized_cwd)
+
+
+def _normalize_repository_url(repository_url: str) -> str:
+    normalized_url = repository_url.strip()
+    if normalized_url.startswith("git@"):
+        host_and_path = normalized_url[4:]
+        if ":" in host_and_path:
+            host, path = host_and_path.split(":", 1)
+            return f"{host.lower()}/{_normalize_repository_path(path)}"
+        return _normalize_repository_path(host_and_path)
+
+    parsed_url = urlparse(normalized_url)
+    if parsed_url.scheme and parsed_url.netloc:
+        return f"{parsed_url.netloc.lower()}/{_normalize_repository_path(parsed_url.path)}"
+
+    return _normalize_repository_path(normalized_url)
+
+
+def _normalize_repository_path(repository_path: str) -> str:
+    normalized_path = repository_path.strip().lstrip("/").rstrip("/")
+    if normalized_path.endswith(".git"):
+        return normalized_path[:-4]
+    return normalized_path

@@ -2,15 +2,17 @@ from fastapi import APIRouter, Depends, Path, Query
 from sqlalchemy.orm import Session
 
 from app.errors.rss import RssJobAlreadyRunningError
+from app.schemas.rss import RssScrapeJobQueuedRead
 from app.schemas.sources import (
     RssSourceDetailRead,
-    RssSourceIngestRead,
+    RssSourcePartitionMaintenanceRead,
     RssSourcePageRead,
 )
 from app.services.sources import (
+    enqueue_sources_ingest_job,
     get_rss_source_by_id,
     get_rss_sources,
-    ingest_rss_sources,
+    repartition_rss_source_partitions,
 )
 from app.utils import JobAlreadyRunning, job_lock
 from database import get_db_session
@@ -69,13 +71,23 @@ def read_source_by_id(
     return get_rss_source_by_id(db, source_id=source_id)
 
 
-@sources_router.post("/ingest", response_model=RssSourceIngestRead)
+@sources_router.post("/ingest", response_model=RssScrapeJobQueuedRead)
 async def ingest_sources(
     feed_ids: list[int] | None = Query(default=None, min_length=1),
     db: Session = Depends(get_db_session),
-) -> RssSourceIngestRead:
+) -> RssScrapeJobQueuedRead:
+    return await enqueue_sources_ingest_job(db, feed_ids=feed_ids)
+
+
+@sources_router.post(
+    "/partitions/repartition-default",
+    response_model=RssSourcePartitionMaintenanceRead,
+)
+def repartition_sources_default_partition(
+    db: Session = Depends(get_db_session),
+) -> RssSourcePartitionMaintenanceRead:
     try:
-        with job_lock(db, "sources_ingest"):
-            return await ingest_rss_sources(db, feed_ids=feed_ids)
+        with job_lock(db, "sources_repartition_partitions"):
+            return repartition_rss_source_partitions(db)
     except JobAlreadyRunning as exception:
-        raise RssJobAlreadyRunningError("Sources ingest already running") from exception
+        raise RssJobAlreadyRunningError("Sources partition repartition already running") from exception

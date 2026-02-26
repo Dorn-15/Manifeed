@@ -1,36 +1,54 @@
 # Manifeed
+
 An embedding-based feed engine that clusters articles by meaning instead of keywords.
 
 This project is licensed under the GNU AGPLv3.
 Commercial hosting or closed-source usage requires a commercial license.
 
-## What Exists
+## Architecture
 
-**Services (Docker Compose)**
-- `postgres` (PostgreSQL 15)
-- `backend` (FastAPI)
-- `frontend_admin` (Next.js Admin)
-- `frontend_user` (Next.js User)
+`Manifeed` is now a microservice-based stack orchestrated with Docker Compose.
 
-**Backend architecture (FastAPI reference layout)**
-- `backend/main.py`: FastAPI app + CORS
-- `backend/database.py`: SQLAlchemy engine/session
-- `backend/alembic`: Alembic migrations
-- `backend/app/routers`: thin routers
-- `backend/app/services`: orchestration layer
-- `backend/app/clients/database`: DB boundaries
-- `backend/app/schemas`: API schemas
+| Service | Role | Exposed Port |
+|---|---|---|
+| `postgres` | Primary database | `5432` |
+| `redis` | Queue broker (Redis Streams) | `6379` |
+| `backend` | FastAPI API/orchestrator | `${BACKEND_PORT:-8000}` |
+| `worker_rss_scrapper` | RSS fetch/parse worker | internal only |
+| `db_manager` | Persists worker results + runs Alembic migrations | internal only |
+| `frontend_admin` | Next.js admin UI | `${ADMIN_PORT:-3000}` |
 
-**Current endpoints**
-- `GET /health/` returns `{status, database}`
-- `GET /rss/` returns RSS feeds list
-- `POST /rss/sync` syncs RSS catalog from git repository
-- `GET /rss/img/{icon_url:path}` serves SVG icons from local RSS repository
+## Async Scrape Flow
 
-**Frontend**
-- Both frontends are now React + TypeScript (Next.js).
-- Admin UI consumes `/health`, `/rss`, `/rss/sync` and RSS icons endpoints.
-- User UI currently uses `/health`.
+1. A client calls `POST /rss/feeds/check` or `POST /sources/ingest`.
+2. `backend` creates a scrape job in PostgreSQL and publishes job batches to Redis stream `rss_scrape_requests`.
+3. `worker_rss_scrapper` consumes requests, fetches/parses feeds, and publishes results to:
+   - `rss_check_results`
+   - `rss_ingest_results`
+   - `error_feeds_parsing`
+4. `db_manager` consumes result streams, applies DB updates, recalculates job status, then ACKs the stream entry.
+5. Clients can poll:
+   - `GET /jobs/{job_id}`
+   - `GET /jobs/{job_id}/feeds`
+
+## API Snapshot
+
+- `GET /health/`
+- `GET /rss/`
+- `PATCH /rss/feeds/{feed_id}/enabled`
+- `PATCH /rss/companies/{company_id}/enabled`
+- `POST /rss/sync`
+- `POST /rss/feeds/check?feed_ids=...` (returns `{job_id, status}`)
+- `GET /rss/img/{icon_url:path}`
+- `GET /sources/`
+- `GET /sources/feeds/{feed_id}`
+- `GET /sources/companies/{company_id}`
+- `GET /sources/{source_id}`
+- `POST /sources/ingest?feed_ids=...` (returns `{job_id, status}`)
+- `POST /sources/partitions/repartition-default`
+- `GET /jobs/{job_id}`
+- `GET /jobs/{job_id}/feeds`
+- `POST /internal/workers/token`
 
 ## Run
 
@@ -41,13 +59,14 @@ make up
 
 Default URLs:
 - Admin: `http://localhost:3000`
-- User: `http://localhost:3001`
 - API: `http://localhost:8000/health/`
+- PostgreSQL: `localhost:5432`
+- Redis: `localhost:6379`
 
-## Ports Override
+Ports override example:
 
 ```bash
-BACKEND_PORT=8001 ADMIN_PORT=3002 USER_PORT=3003 make up
+BACKEND_PORT=8001 ADMIN_PORT=3002 make up
 ```
 
 ## Makefile Commands
@@ -67,29 +86,57 @@ Per service:
 - `make up SERVICE=backend`
 - `make logs SERVICE=postgres`
 
-Database:
-- `make db-migrate` runs `alembic upgrade head` inside the backend container.
-- `make db-reset` downgrades to `base` then upgrades to `head` (drops all tables managed by migrations).
+Tests:
+- `make test-backend`
+- `make test-worker`
+- `make test-db-manager`
 
-## Environment
+Database helpers:
+- `make db-migrate` starts `postgres` then runs `alembic upgrade head` in a one-shot `db_manager` container.
+- `make db-reset` stops `worker_rss_scrapper` and `db_manager`, runs `alembic downgrade base` then `upgrade head`, then starts workers again.
 
-Optional variables (Compose):
+## Environment Variables
+
+Compose-level defaults:
 - `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`
-- `CORS_ORIGINS` (default `*`)
+- `BACKEND_PORT`, `ADMIN_PORT`
+- `CORS_ORIGINS`
 - `NEXT_PUBLIC_API_URL_ADMIN`
-- `NEXT_PUBLIC_API_URL_USER`
-- `BACKEND_PORT`, `ADMIN_PORT`, `USER_PORT`
 
-Backend runtime variables (add them to backend service env if needed):
-- `RSS_FEEDS_REPOSITORY_URL` (default `https://github.com/Dorn-15/rss_feeds`)
-- `RSS_FEEDS_REPOSITORY_BRANCH` (default `main`)
-- `RSS_FEEDS_REPOSITORY_PATH` (default `/tmp/rss_feeds`)
+Backend:
+- `DATABASE_URL`
+- `REDIS_URL`
+- `REDIS_QUEUE_REQUESTS`
+- `RSS_SCRAPE_QUEUE_BATCH_SIZE`
+- `RSS_FEEDS_REPOSITORY_URL`
+- `RSS_FEEDS_REPOSITORY_BRANCH`
+- `RSS_FEEDS_REPOSITORY_PATH`
+- `WORKER_ID`, `WORKER_SECRET`
+- `WORKER_CREDENTIALS`
+- `WORKER_TOKEN_SECRET`
+- `WORKER_TOKEN_TTL_SECONDS`
 
-## Notes
+Worker:
+- `MANIFEED_API_URL`
+- `WORKER_ID`, `WORKER_SECRET`
+- `WORKER_QUEUE_READ_COUNT`
+- `WORKER_COMPANY_MAX_REQUESTS_PER_SECOND`
+- `REDIS_URL`
 
-- DB is not exposed to host by default (no `5432:5432`).
-- If you need host access: add `ports: - "5432:5432"` under `postgres`.
+DB manager:
+- `DATABASE_URL`
+- `REDIS_URL`
 
-## Docs
+Frontend admin:
+- `NEXT_PUBLIC_API_URL`
 
-Per-service notes live in `doc/` (one folder per Docker service).
+## Documentation
+
+- `doc/backend/backend.md`
+- `doc/backend/worker_rss_scrapper.md`
+- `doc/db_manager/db_manager.md`
+- `doc/redis/redis.md`
+- `doc/frontend_admin/frontend_admin.md`
+- `doc/postgres/postgres.md`
+- `doc/postgres/schema.md`
+- `doc/postgres/relations.md`

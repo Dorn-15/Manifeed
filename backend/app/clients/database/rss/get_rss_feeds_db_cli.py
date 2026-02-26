@@ -1,9 +1,10 @@
 from collections.abc import Sequence
 
+import sqlalchemy as sa
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
-from app.models.rss import RssCompany, RssFeed
+from app.models.rss import RssCompany, RssFeed, RssFeedScraping
 from app.schemas.rss import RssCompanyRead, RssFeedRead
 
 
@@ -13,7 +14,10 @@ def list_rss_feeds(
 ) -> list[RssFeed]:
     query = (
         select(RssFeed)
-        .options(selectinload(RssFeed.company))
+        .options(
+            selectinload(RssFeed.company),
+            selectinload(RssFeed.scraping),
+        )
         .order_by(RssFeed.id.asc())
     )
     if feed_ids:
@@ -39,7 +43,9 @@ def list_rss_feeds_by_urls(
         return {}
 
     feeds = db.execute(
-        select(RssFeed).where(RssFeed.url.in_(unique_urls))
+        select(RssFeed)
+        .options(selectinload(RssFeed.scraping))
+        .where(RssFeed.url.in_(unique_urls))
     ).scalars().all()
     return {feed.url: feed for feed in feeds}
 
@@ -50,9 +56,16 @@ def list_enabled_rss_feeds(
 ) -> list[RssFeed]:
     query = (
         select(RssFeed)
-        .options(selectinload(RssFeed.company))
+        .options(
+            selectinload(RssFeed.company),
+            selectinload(RssFeed.scraping),
+        )
+        .outerjoin(
+            RssFeedScraping,
+            RssFeedScraping.feed_id == RssFeed.id,
+        )
         .where(RssFeed.enabled.is_(True))
-        .where(RssFeed.fetchprotection != 0)
+        .where(sa.func.coalesce(RssFeedScraping.fetchprotection, 1) != 0)
         .order_by(RssFeed.id.asc())
     )
     if feed_ids:
@@ -72,7 +85,10 @@ def list_enabled_rss_feeds(
 def get_rss_feed_by_id(db: Session, feed_id: int) -> RssFeed | None:
     query = (
         select(RssFeed)
-        .options(selectinload(RssFeed.company))
+        .options(
+            selectinload(RssFeed.company),
+            selectinload(RssFeed.scraping),
+        )
         .where(RssFeed.id == feed_id)
     )
     return db.execute(query).scalar_one_or_none()
@@ -85,9 +101,22 @@ def _to_rss_feed_read(feed: RssFeed) -> RssFeedRead:
         section=feed.section,
         enabled=feed.enabled,
         trust_score=feed.trust_score,
-        fetchprotection=feed.fetchprotection,
+        fetchprotection=_resolve_feed_fetchprotection(feed),
         company=_to_company_read(feed.company) if feed.company is not None else None,
     )
+
+
+def _resolve_feed_fetchprotection(feed: RssFeed) -> int:
+    scraping = getattr(feed, "scraping", None)
+    scraping_fetchprotection = getattr(scraping, "fetchprotection", None)
+    if isinstance(scraping_fetchprotection, int) and 0 <= scraping_fetchprotection <= 2:
+        return scraping_fetchprotection
+
+    company = getattr(feed, "company", None)
+    company_fetchprotection = getattr(company, "fetchprotection", None)
+    if isinstance(company_fetchprotection, int) and 0 <= company_fetchprotection <= 2:
+        return company_fetchprotection
+    return 1
 
 
 def _to_company_read(company: RssCompany) -> RssCompanyRead:

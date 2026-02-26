@@ -28,3 +28,7 @@ class RssFeedToggleForbiddenError(RssSyncError):
 
 class RssJobAlreadyRunningError(RssSyncError):
     """Raised when an RSS operation is already running."""
+
+
+class RssJobQueuePublishError(RssSyncError):
+    """Raised when an RSS scrape job cannot be published to the queue."""

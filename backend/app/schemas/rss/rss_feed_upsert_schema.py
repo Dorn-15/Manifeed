@@ -6,5 +6,5 @@ class RssFeedUpsertSchema(BaseModel):
     section: str | None = Field(default=None, max_length=50)
     enabled: bool = True
     trust_score: float = Field(default=0.5, ge=0.0, le=1.0)
-    fetchprotection: int | None = Field(default=None, ge=0, le=3)
+    fetchprotection: int | None = Field(default=None, ge=0, le=2)
     tags: list[str] = Field(default_factory=list)

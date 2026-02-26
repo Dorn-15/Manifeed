@@ -22,11 +22,7 @@ class RssSourceFeed(Base):
             ["rss_feeds.id"],
             ondelete="CASCADE",
         ),
-        sa.Index(
-            "idx_rss_source_feeds_source_id_published_at",
-            "source_id",
-            "published_at",
-        ),
+        sa.Index("idx_rss_source_feeds_source_id_published_at", "source_id", "published_at"),
         sa.Index("idx_rss_source_feeds_feed_id", "feed_id"),
         sa.Index("idx_rss_source_feeds_published_at", "published_at"),
         {
@@ -40,6 +36,7 @@ class RssSourceFeed(Base):
         sa.DateTime(timezone=True),
         primary_key=True,
         nullable=False,
+        server_default=sa.text("TIMESTAMPTZ '1970-01-01 00:00:00+00'"),
     )
 
     source: Mapped["RssSource"] = relationship("RssSource", back_populates="feed_links")

@@ -23,6 +23,13 @@ from .rss_company_db_cli import (
 from .rss_tags_db_cli import (
     get_or_create_tags,
 )
+from .rss_scrape_job_database_client import (
+    create_rss_scrape_job,
+    get_rss_scrape_job_status_read,
+    list_rss_feed_scrape_payloads,
+    list_rss_scrape_job_feed_reads,
+    set_rss_scrape_job_status,
+)
 
 __all__ = [
     "list_rss_feeds",
@@ -42,4 +49,10 @@ __all__ = [
     "get_company_by_id",
     "get_company_by_name",
     "get_or_create_company",
+    # Scrape jobs
+    "create_rss_scrape_job",
+    "get_rss_scrape_job_status_read",
+    "list_rss_feed_scrape_payloads",
+    "list_rss_scrape_job_feed_reads",
+    "set_rss_scrape_job_status",
 ]

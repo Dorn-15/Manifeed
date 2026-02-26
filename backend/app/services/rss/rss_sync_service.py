@@ -90,7 +90,7 @@ def _sync_catalog_file(
         icon_url=catalog.img.strip(),
         country=normalize_country(catalog.country),
         language=normalize_country(catalog.language),
-        fetchprotection=max(0, min(3, catalog.fetchprotection)),
+        fetchprotection=max(0, min(2, catalog.fetchprotection)),
     )
 
     upsert_payloads = [

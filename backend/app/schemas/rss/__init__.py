@@ -1,5 +1,4 @@
 from .rss_company_schema import RssCompanyRead
-from .rss_feed_check_schema import RssFeedCheckResultRead
 
 from .rss_enabled_toggle_schema import (
     RssEnabledTogglePayload,
@@ -8,17 +7,28 @@ from .rss_enabled_toggle_schema import (
 )
 
 from .rss_feed_schema import RssFeedRead
+from .rss_scrape_job_schema import (
+    RssScrapeFeedPayloadSchema,
+    RssScrapeJobFeedRead,
+    RssScrapeJobQueuedRead,
+    RssScrapeJobRequestSchema,
+    RssScrapeJobStatusRead,
+)
 from .rss_feed_upsert_schema import RssFeedUpsertSchema
 from .rss_source_feed_schema import RssSourceCatalogSchema, RssSourceFeedSchema
 from .rss_sync_schema import RssRepositorySyncRead, RssSyncRead
 
 __all__ = [
     "RssCompanyRead",
-    "RssFeedCheckResultRead",
     "RssCompanyEnabledToggleRead",
     "RssFeedEnabledToggleRead",
     "RssEnabledTogglePayload",
     "RssFeedRead",
+    "RssScrapeFeedPayloadSchema",
+    "RssScrapeJobFeedRead",
+    "RssScrapeJobQueuedRead",
+    "RssScrapeJobRequestSchema",
+    "RssScrapeJobStatusRead",
     "RssFeedUpsertSchema",
     "RssSourceCatalogSchema",
     "RssSourceFeedSchema",

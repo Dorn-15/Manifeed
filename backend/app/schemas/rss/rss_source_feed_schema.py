@@ -9,7 +9,7 @@ class RssSourceFeedSchema(BaseModel):
     tags: list[str] = Field(default_factory=list)
     enabled: bool = True
     trust_score: float = Field(default=0.5, ge=0.0, le=1.0)
-    fetchprotection: int | None = Field(default=None, ge=0, le=3)
+    fetchprotection: int | None = Field(default=None, ge=0, le=2)
 
     @field_validator("tags")
     @classmethod
@@ -30,5 +30,5 @@ class RssSourceCatalogSchema(BaseModel):
     img: str | None = Field(default=None, max_length=500)
     country: str | None = Field(default=None, min_length=2, max_length=2)
     language: str | None = Field(default=None, min_length=2, max_length=2)
-    fetchprotection: int = Field(default=1, ge=0, le=3)
+    fetchprotection: int = Field(default=1, ge=0, le=2)
     feeds: list[RssSourceFeedSchema] = Field(default_factory=list)

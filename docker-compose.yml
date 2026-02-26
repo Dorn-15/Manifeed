@@ -18,6 +18,19 @@ services:
     networks:
       - manifeed_internal
 
+  redis:
+    image: redis:7-alpine
+    container_name: manifeed_redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - manifeed_internal
+
   backend:
     build:
       context: ./backend
@@ -25,17 +38,78 @@ services:
     container_name: manifeed_backend
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-manifeed}:${POSTGRES_PASSWORD:-manifeed}@postgres:5432/${POSTGRES_DB:-manifeed}
+      REDIS_URL: redis://redis:6379/0
+      REDIS_QUEUE_REQUESTS: ${REDIS_QUEUE_REQUESTS:-rss_scrape_requests}
+      RSS_SCRAPE_QUEUE_BATCH_SIZE: ${RSS_SCRAPE_QUEUE_BATCH_SIZE:-50}
       CORS_ORIGINS: ${CORS_ORIGINS:-*}
+      RSS_FEEDS_REPOSITORY_PATH: ${RSS_FEEDS_REPOSITORY_PATH:-/rss_feeds}
+      WORKER_ID: ${WORKER_ID:-worker_rss_scrapper}
+      WORKER_SECRET: ${WORKER_SECRET:-worker_rss_scrapper_secret}
+      WORKER_TOKEN_SECRET: ${WORKER_TOKEN_SECRET:-manifeed-worker-token-secret}
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     ports:
       - "${BACKEND_PORT:-8000}:8000"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health/').read()\"",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     volumes:
       - ./backend:/app:z
+      - ../rss_feeds:/rss_feeds:z
     networks:
       - manifeed_internal
       - manifeed_public
+    dns:
+      - 8.8.8.8
+    restart: unless-stopped
+
+  worker_rss_scrapper:
+    build:
+      context: ./worker-rss-scrapper
+      dockerfile: Dockerfile
+    container_name: manifeed_worker_rss_scrapper
+    environment:
+      MANIFEED_API_URL: http://backend:8000
+      WORKER_ID: ${WORKER_ID:-worker_rss_scrapper}
+      WORKER_SECRET: ${WORKER_SECRET:-worker_rss_scrapper_secret}
+      REDIS_URL: redis://redis:6379/0
+      WORKER_QUEUE_READ_COUNT: ${WORKER_QUEUE_READ_COUNT:-20}
+      WORKER_COMPANY_MAX_REQUESTS_PER_SECOND: ${WORKER_COMPANY_MAX_REQUESTS_PER_SECOND:-4}
+    depends_on:
+      backend:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - manifeed_internal
+    restart: unless-stopped
+
+  db_manager:
+    build:
+      context: ./db-manager
+      dockerfile: Dockerfile
+    container_name: manifeed_db_manager
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-manifeed}:${POSTGRES_PASSWORD:-manifeed}@postgres:5432/${POSTGRES_DB:-manifeed}
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./db-manager:/app:z
+    networks:
+      - manifeed_internal
     restart: unless-stopped
 
   frontend_admin:
@@ -55,24 +129,6 @@ services:
     networks:
       - manifeed_public
     restart: unless-stopped
-
-  # frontend_user:
-  #   build:
-  #     context: ./frontend-user
-  #     dockerfile: Dockerfile
-  #   container_name: manifeed_frontend_user
-  #   user: "${UID:-1000}:${GID:-1000}"
-  #   environment:
-  #     NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL_USER:-http://localhost:8000}
-  #   depends_on:
-  #     - backend
-  #   ports:
-  #     - "${USER_PORT:-3001}:3000"
-  #   volumes:
-  #     - ./frontend-user:/app:z
-  #   networks:
-  #     - manifeed_public
-  #   restart: unless-stopped
 
 volumes:
   pgdata:

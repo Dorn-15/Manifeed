@@ -11,7 +11,7 @@ class RssCompany(Base):
     __table_args__ = (
         sa.UniqueConstraint("name", name="uq_rss_company_name"),
         sa.CheckConstraint(
-            "fetchprotection >= 0 AND fetchprotection <= 3",
+            "fetchprotection >= 0 AND fetchprotection <= 2",
             name="ck_rss_company_fetchprotection",
         ),
         sa.Index("idx_rss_company_country", "country"),
