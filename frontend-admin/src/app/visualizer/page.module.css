@@ -1,0 +1,281 @@
+.main {
+  --shell-gap: var(--space-4);
+}
+
+.headerMeta {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.headerMeta span {
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-panel-muted);
+  color: var(--text-secondary);
+  font-size: var(--text-r-size);
+}
+
+.toolbar {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.toolbarRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.limitField {
+  min-width: 220px;
+}
+
+.toolbarActions {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.8fr) minmax(320px, 0.95fr);
+  gap: var(--space-4);
+  align-items: flex-start;
+}
+
+.canvasPanel,
+.selectionPanel,
+.neighborsPanel {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.canvasPanel {
+  min-height: 780px;
+}
+
+.sidebar {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.panelHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.panelHeader h2 {
+  margin: 0;
+}
+
+.panelHeader p {
+  margin: var(--space-1) 0 0;
+  color: var(--text-secondary);
+}
+
+.legend {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.legendItem {
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-subtle);
+  font-size: var(--text-r-size);
+  color: var(--text-secondary);
+}
+
+.legendSelected {
+  background: rgb(255 183 125 / 0.15);
+  border-color: var(--color-complementary-70);
+  color: var(--color-complementary-100);
+}
+
+.legendNeighbor {
+  background: rgb(125 157 255 / 0.15);
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+}
+
+.legendOther {
+  background: rgb(242 245 255 / 0.04);
+}
+
+.canvasShell {
+  width: 100%;
+  border-radius: 28px;
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  background:
+    radial-gradient(circle at top left, rgb(125 157 255 / 0.16), transparent 34%),
+    radial-gradient(circle at bottom right, rgb(255 183 125 / 0.12), transparent 28%),
+    linear-gradient(180deg, rgb(8 13 27 / 0.94) 0%, rgb(7 10 18 / 0.98) 100%);
+}
+
+.canvas {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.canvasFrame {
+  fill: transparent;
+  stroke: rgb(125 157 255 / 0.2);
+}
+
+.gridLine {
+  stroke: rgb(242 245 255 / 0.06);
+  stroke-width: 1;
+}
+
+.connectionLine {
+  stroke: rgb(255 183 125 / 0.32);
+  stroke-width: 1.5;
+  stroke-dasharray: 6 8;
+}
+
+.pointGroup {
+  cursor: pointer;
+}
+
+.pointGroup:focus-visible {
+  outline: none;
+}
+
+.point {
+  fill: rgb(178 189 220 / 0.58);
+  stroke: rgb(7 13 27 / 0.9);
+  stroke-width: 2;
+  transition:
+    fill var(--motion-duration-fast) var(--motion-easing-standard),
+    transform var(--motion-duration-fast) var(--motion-easing-standard),
+    r var(--motion-duration-fast) var(--motion-easing-standard);
+}
+
+.pointGroup:hover .point {
+  fill: var(--color-heavenly-100);
+}
+
+.pointSelected {
+  fill: var(--color-complementary-100);
+  stroke: rgb(255 239 228 / 0.9);
+}
+
+.pointNeighbor {
+  fill: var(--color-heavenly-100);
+  stroke: rgb(233 240 255 / 0.9);
+}
+
+.pointLabel {
+  fill: var(--text-primary);
+  font-size: 15px;
+  font-weight: 600;
+  pointer-events: none;
+}
+
+.selectedCard,
+.neighborCard {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background: rgb(242 245 255 / 0.04);
+}
+
+.selectedMeta,
+.neighborMeta {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  color: var(--text-secondary);
+  font-size: var(--text-r-size);
+}
+
+.selectedCard h3,
+.neighborCard h3 {
+  margin: 0;
+}
+
+.selectedCard p,
+.neighborSummary {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+.selectedActions,
+.neighborActions {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.neighborList {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.neighborHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  align-items: flex-start;
+}
+
+.neighborCompany {
+  margin: 0 0 var(--space-1);
+  color: var(--text-accent);
+}
+
+.similarityBadge {
+  min-width: 64px;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  background: rgb(255 183 125 / 0.14);
+  border: 1px solid rgb(255 183 125 / 0.35);
+  color: var(--color-complementary-100);
+  text-align: center;
+  font-weight: 600;
+}
+
+@media (max-width: 1180px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+
+  .canvasPanel {
+    min-height: auto;
+  }
+}
+
+@media (max-width: 720px) {
+  .toolbarRow,
+  .panelHeader,
+  .neighborHeader,
+  .selectedMeta,
+  .neighborMeta {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .toolbarActions,
+  .selectedActions,
+  .neighborActions {
+    width: 100%;
+  }
+
+  .headerMeta {
+    justify-content: flex-start;
+  }
+}

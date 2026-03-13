@@ -17,28 +17,41 @@ class RssSource(Base):
             name="uq_rss_sources_url_published_at",
         ),
         sa.Index("idx_rss_sources_published_at", "published_at"),
-        {
-            "postgresql_partition_by": "RANGE (published_at)",
-        },
+        sa.Index("idx_rss_sources_ingested_at", "ingested_at"),
     )
 
     id: Mapped[int] = mapped_column(
         sa.Integer(),
         primary_key=True,
         autoincrement=True,
-        server_default=sa.text("nextval('rss_sources_id_seq'::regclass)"),
     )
-    title: Mapped[str] = mapped_column(sa.String(500), nullable=False)
-    summary: Mapped[str | None] = mapped_column(sa.Text(), nullable=True)
-    author: Mapped[str | None] = mapped_column(sa.String(255), nullable=True)
     url: Mapped[str] = mapped_column(sa.String(1000), nullable=False)
     published_at: Mapped[datetime] = mapped_column(
         sa.DateTime(timezone=True),
-        primary_key=True,
         nullable=False,
         server_default=sa.text("TIMESTAMPTZ '1970-01-01 00:00:00+00'"),
     )
-    image_url: Mapped[str | None] = mapped_column(sa.String(1000), nullable=True)
+    ingested_at: Mapped[datetime] = mapped_column(
+        sa.DateTime(timezone=True),
+        nullable=False,
+        server_default=sa.text("now()"),
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        sa.DateTime(timezone=True),
+        nullable=False,
+        server_default=sa.text("now()"),
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        sa.DateTime(timezone=True),
+        nullable=False,
+        server_default=sa.text("now()"),
+    )
+
+    content: Mapped["RssSourceContent | None"] = relationship(
+        "RssSourceContent",
+        back_populates="source",
+        uselist=False,
+    )
 
     feed_links: Mapped[list["RssSourceFeed"]] = relationship(
         "RssSourceFeed",

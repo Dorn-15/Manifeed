@@ -22,9 +22,15 @@ from .normalize_utils import (
     normalize_country,
     normalize_host,
 )
+from .article_identity_utils import (
+    normalize_article_identity_text,
+)
 
 from .deduplicate import (
     dedup_str,
+)
+from .embedding_utils import (
+    resolve_embedding_model_name,
 )
 
 from .job_lock import (
@@ -50,8 +56,11 @@ __all__ = [
     "normalize_name_from_filename",
     "normalize_country",
     "normalize_host",
+    "normalize_article_identity_text",
     #deduplicate
     "dedup_str",
+    #embedding
+    "resolve_embedding_model_name",
     #job_lock
     "JobAlreadyRunning",
     "job_lock",

@@ -1,9 +1,7 @@
 from __future__ import annotations
-
 from contextlib import contextmanager
 from threading import Lock
 from typing import Optional
-
 from sqlalchemy import text
 from sqlalchemy.engine import Connection, Engine
 from sqlalchemy.orm import Session
@@ -19,6 +17,7 @@ _PG_LOCK_IDS: dict[str, int] = {
     "rss_patch_feed_enabled": 83001,
     "rss_patch_company_enabled": 83002,
     "rss_sync": 83003,
+    "sources_repartition_partitions": 83004,
 }
 
 
@@ -31,7 +30,9 @@ def _get_local_lock(name: str) -> Lock:
         return lock
 
 
-def _open_pg_lock_connection(db: Session) -> Optional[Connection]:
+def _open_pg_lock_connection(db: Session | None) -> Optional[Connection]:
+    if db is None:
+        return None
     try:
         bind = db.get_bind()
     except Exception:
@@ -68,7 +69,7 @@ def _release_pg_lock(pg_conn: Connection, lock_id: int) -> None:
 
 
 @contextmanager
-def job_lock(db: Session, name: str):
+def job_lock(db: Session | None, name: str):
     """
     Prevent concurrent execution of the same job.
     Uses an in-process lock and an optional Postgres advisory lock.

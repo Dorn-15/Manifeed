@@ -5,7 +5,7 @@ from .custom_exceptions import (
     RssFeedToggleForbiddenError,
     RssIconNotFoundError,
     RssJobAlreadyRunningError,
-    RssJobQueuePublishError,
+    RssJobEnqueueError,
     RssRepositorySyncError,
 )
 
@@ -16,7 +16,7 @@ from .exception_handlers import (
     rss_feed_toggle_forbidden_error_handler,
     rss_icon_not_found_error_handler,
     rss_job_already_running_error_handler,
-    rss_job_queue_publish_error_handler,
+    rss_job_enqueue_error_handler,
     rss_repository_sync_error_handler,
 )
 
@@ -28,7 +28,7 @@ __all__ = [
     "RssFeedToggleForbiddenError",
     "RssIconNotFoundError",
     "RssJobAlreadyRunningError",
-    "RssJobQueuePublishError",
+    "RssJobEnqueueError",
     "RssRepositorySyncError",
     # Exception handlers
     "rss_catalog_parse_error_handler",
@@ -37,6 +37,6 @@ __all__ = [
     "rss_feed_toggle_forbidden_error_handler",
     "rss_icon_not_found_error_handler",
     "rss_job_already_running_error_handler",
-    "rss_job_queue_publish_error_handler",
+    "rss_job_enqueue_error_handler",
     "rss_repository_sync_error_handler",
 ]

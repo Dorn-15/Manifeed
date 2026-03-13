@@ -14,6 +14,10 @@ class RssFeed(Base):
             "trust_score >= 0.0 AND trust_score <= 1.0",
             name="ck_rss_feeds_trust_score",
         ),
+        sa.CheckConstraint(
+            "fetchprotection_override IS NULL OR (fetchprotection_override >= 0 AND fetchprotection_override <= 2)",
+            name="ck_rss_feeds_fetchprotection_override",
+        ),
         sa.Index(
             "idx_rss_feeds_enabled",
             "enabled",
@@ -35,6 +39,10 @@ class RssFeed(Base):
         nullable=False,
         server_default=sa.text("0.5"),
     )
+    fetchprotection_override: Mapped[int | None] = mapped_column(
+        sa.SmallInteger(),
+        nullable=True,
+    )
     company_id: Mapped[int | None] = mapped_column(
         sa.ForeignKey("rss_company.id", ondelete="SET NULL"),
         nullable=True,
@@ -44,8 +52,8 @@ class RssFeed(Base):
         "RssCompany",
         back_populates="feeds",
     )
-    scraping: Mapped["RssFeedScraping | None"] = relationship(
-        "RssFeedScraping",
+    runtime: Mapped["RssFeedRuntime | None"] = relationship(
+        "RssFeedRuntime",
         back_populates="feed",
         uselist=False,
         cascade="all, delete-orphan",

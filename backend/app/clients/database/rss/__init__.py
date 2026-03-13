@@ -15,9 +15,17 @@ from .utils_rss_feeds_db_cli import (
 )
 
 from .rss_company_db_cli import (
+    delete_rss_companies_without_feeds,
     get_company_by_id,
     get_company_by_name,
     get_or_create_company,
+    list_rss_company_ids_with_feeds,
+)
+
+from .rss_catalog_sync_database_client import (
+    get_rss_catalog_sync_state,
+    mark_rss_catalog_sync_failure,
+    mark_rss_catalog_sync_success,
 )
 
 from .rss_tags_db_cli import (
@@ -28,7 +36,6 @@ from .rss_scrape_job_database_client import (
     get_rss_scrape_job_status_read,
     list_rss_feed_scrape_payloads,
     list_rss_scrape_job_feed_reads,
-    set_rss_scrape_job_status,
 )
 
 __all__ = [
@@ -45,14 +52,18 @@ __all__ = [
     # Tags
     "get_or_create_tags",
     # Companies
-    # Company
+    "delete_rss_companies_without_feeds",
     "get_company_by_id",
     "get_company_by_name",
     "get_or_create_company",
+    "list_rss_company_ids_with_feeds",
+    # Catalog sync
+    "get_rss_catalog_sync_state",
+    "mark_rss_catalog_sync_failure",
+    "mark_rss_catalog_sync_success",
     # Scrape jobs
     "create_rss_scrape_job",
     "get_rss_scrape_job_status_read",
     "list_rss_feed_scrape_payloads",
     "list_rss_scrape_job_feed_reads",
-    "set_rss_scrape_job_status",
 ]

@@ -46,3 +46,7 @@ next-env.d.ts
 .vscode/
 
 __pycache__/
+/workers-rust/.cargo-home/
+/workers-rust/target/
+/models/*/*
+!/models/*/README.md

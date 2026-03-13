@@ -1,7 +1,8 @@
 from sqlalchemy.orm import Session
+
 from fastapi import HTTPException
 
-from app.clients.database.sources import (
+from app.clients.database import (
     get_rss_source_detail_read_by_id,
     list_rss_sources_read,
 )
@@ -39,10 +40,7 @@ def get_rss_source_by_id(
     *,
     source_id: int,
 ) -> RssSourceDetailRead | None:
-    source = get_rss_source_detail_read_by_id(db, source_id=source_id)
-    if source is None:
-        raise HTTPException(
-            status_code=404,
-            detail=f"RSS source {source_id} not found",
-        )
-    return source
+    payload = get_rss_source_detail_read_by_id(db, source_id)
+    if payload is None:
+        raise HTTPException(status_code=404, detail=f"RSS source {source_id} not found")
+    return payload

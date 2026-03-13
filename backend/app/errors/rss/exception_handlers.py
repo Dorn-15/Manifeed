@@ -9,7 +9,7 @@ from .custom_exceptions import (
     RssFeedToggleForbiddenError,
     RssIconNotFoundError,
     RssJobAlreadyRunningError,
-    RssJobQueuePublishError,
+    RssJobEnqueueError,
     RssRepositorySyncError,
 )
 
@@ -84,9 +84,9 @@ def rss_job_already_running_error_handler(
     )
 
 
-def rss_job_queue_publish_error_handler(
+def rss_job_enqueue_error_handler(
     _: Request,
-    exception: RssJobQueuePublishError,
+    exception: RssJobEnqueueError,
 ) -> JSONResponse:
     return JSONResponse(
         status_code=status.HTTP_502_BAD_GATEWAY,

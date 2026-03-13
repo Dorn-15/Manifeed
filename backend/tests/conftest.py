@@ -1,3 +1,4 @@
+import os
 from collections.abc import Generator
 from unittest.mock import Mock
 
@@ -7,6 +8,9 @@ import pytest
 from sqlalchemy.orm import Session
 
 from database import get_db_session
+
+os.environ.setdefault("MANIFEED_DISABLE_STARTUP_TASKS", "1")
+
 from main import app
 
 

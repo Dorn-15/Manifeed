@@ -1,54 +1,44 @@
 from __future__ import annotations
 
-from collections import defaultdict, deque
-from collections.abc import Iterator
 from datetime import datetime, timezone
-import os
 from uuid import uuid4
 
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
-from app.clients.database.rss import (
+from app.clients.database import (
     create_rss_scrape_job,
+    enqueue_rss_scrape_tasks,
     get_rss_scrape_job_status_read,
     list_rss_feed_scrape_payloads,
     list_rss_scrape_job_feed_reads,
-    set_rss_scrape_job_status,
+    resolve_rss_scrape_task_batch_size,
 )
-from app.clients.queue import publish_rss_scrape_job
-from app.errors.rss import RssJobQueuePublishError
-from app.schemas.rss import (
-    RssScrapeFeedPayloadSchema,
-    RssScrapeJobFeedRead,
-    RssScrapeJobQueuedRead,
-    RssScrapeJobRequestSchema,
-    RssScrapeJobStatusRead,
-)
-
-DEFAULT_QUEUE_BATCH_SIZE = 50
+from app.domain.rss import build_rss_scrape_batches
+from app.errors.rss import RssJobEnqueueError
+from app.schemas.rss import RssScrapeJobFeedRead, RssScrapeJobQueuedRead, RssScrapeJobStatusRead
 
 
-async def enqueue_rss_feed_check_job(
+def enqueue_rss_feed_check_job(
     db: Session,
     *,
     feed_ids: list[int] | None = None,
 ) -> RssScrapeJobQueuedRead:
-    return await _enqueue_rss_scrape_job(
+    return _enqueue_rss_scrape_job(
         db=db,
         ingest=False,
         requested_by="rss_feeds_check_endpoint",
         feed_ids=feed_ids,
-        enabled_only=False,
+        enabled_only=True,
     )
 
 
-async def enqueue_rss_sources_ingest_job(
+def enqueue_rss_sources_ingest_job(
     db: Session,
     *,
     feed_ids: list[int] | None = None,
 ) -> RssScrapeJobQueuedRead:
-    return await _enqueue_rss_scrape_job(
+    return _enqueue_rss_scrape_job(
         db=db,
         ingest=True,
         requested_by="sources_ingest_endpoint",
@@ -62,10 +52,10 @@ def get_rss_scrape_job_status(
     *,
     job_id: str,
 ) -> RssScrapeJobStatusRead:
-    status_payload = get_rss_scrape_job_status_read(db, job_id=job_id)
-    if status_payload is None:
+    payload = get_rss_scrape_job_status_read(db, job_id=job_id)
+    if payload is None:
         raise HTTPException(status_code=404, detail=f"RSS scrape job {job_id} not found")
-    return status_payload
+    return payload
 
 
 def list_rss_scrape_job_feeds(
@@ -79,7 +69,7 @@ def list_rss_scrape_job_feeds(
     return list_rss_scrape_job_feed_reads(db, job_id=job_id)
 
 
-async def _enqueue_rss_scrape_job(
+def _enqueue_rss_scrape_job(
     *,
     db: Session,
     ingest: bool,
@@ -92,109 +82,43 @@ async def _enqueue_rss_scrape_job(
         feed_ids=feed_ids,
         enabled_only=enabled_only,
     )
-
     requested_at = datetime.now(timezone.utc)
     job_id = str(uuid4())
-    initial_status = "queued" if feeds else "completed"
-
-    create_rss_scrape_job(
-        db,
-        job_id=job_id,
-        ingest=ingest,
-        requested_by=requested_by,
-        requested_at=requested_at,
-        status=initial_status,
-        feeds=feeds,
+    status = "completed" if not feeds else "queued"
+    feed_batches = build_rss_scrape_batches(
+        feeds,
+        batch_size=resolve_rss_scrape_task_batch_size(),
+        random_seed=job_id,
     )
+    tasks_total = len(feed_batches)
 
     try:
+        create_rss_scrape_job(
+            db,
+            job_id=job_id,
+            ingest=ingest,
+            requested_by=requested_by,
+            requested_at=requested_at,
+            status=status,
+            tasks_total=tasks_total,
+            items_total=len(feeds),
+        )
+        if feeds:
+            enqueue_rss_scrape_tasks(
+                db,
+                job_id=job_id,
+                requested_at=requested_at,
+                feed_batches=feed_batches,
+            )
         db.commit()
-    except Exception:
+    except Exception as exception:
         db.rollback()
-        raise
+        raise RssJobEnqueueError(f"Unable to enqueue RSS scrape job: {exception}") from exception
 
-    if feeds:
-        mixed_feeds = _mix_feeds_by_company(feeds)
-        queue_batch_size = _resolve_queue_batch_size()
-        try:
-            for feed_batch in _iter_feed_batches(mixed_feeds, batch_size=queue_batch_size):
-                payload = RssScrapeJobRequestSchema(
-                    job_id=job_id,
-                    requested_at=requested_at,
-                    ingest=ingest,
-                    requested_by=requested_by,
-                    feeds=feed_batch,
-                ).model_dump(mode="json")
-                await publish_rss_scrape_job(payload)
-        except Exception as exception:
-            _mark_job_as_failed_after_publish_error(db, job_id=job_id)
-            raise RssJobQueuePublishError("Unable to publish RSS scrape job") from exception
-
-    return RssScrapeJobQueuedRead(job_id=job_id, status=initial_status)
-
-
-def _mark_job_as_failed_after_publish_error(db: Session, *, job_id: str) -> None:
-    try:
-        if set_rss_scrape_job_status(db, job_id=job_id, status="failed"):
-            db.commit()
-    except Exception:
-        db.rollback()
-
-
-def _iter_feed_batches(
-    feeds: list[RssScrapeFeedPayloadSchema],
-    *,
-    batch_size: int,
-) -> Iterator[list[RssScrapeFeedPayloadSchema]]:
-    batch: list[RssScrapeFeedPayloadSchema] = []
-    for feed in feeds:
-        batch.append(feed)
-        if len(batch) >= batch_size:
-            yield batch
-            batch = []
-    if batch:
-        yield batch
-
-
-def _mix_feeds_by_company(
-    feeds: list[RssScrapeFeedPayloadSchema],
-) -> list[RssScrapeFeedPayloadSchema]:
-    if len(feeds) <= 1:
-        return feeds
-
-    feeds_by_company: dict[str, deque[RssScrapeFeedPayloadSchema]] = defaultdict(deque)
-    company_order: list[str] = []
-    for feed in feeds:
-        company_key = _resolve_company_key(feed)
-        if company_key not in feeds_by_company:
-            company_order.append(company_key)
-        feeds_by_company[company_key].append(feed)
-
-    mixed_feeds: list[RssScrapeFeedPayloadSchema] = []
-    has_pending = True
-    while has_pending:
-        has_pending = False
-        for company_key in company_order:
-            company_feeds = feeds_by_company[company_key]
-            if not company_feeds:
-                continue
-            mixed_feeds.append(company_feeds.popleft())
-            has_pending = True
-    return mixed_feeds
-
-
-def _resolve_company_key(feed: RssScrapeFeedPayloadSchema) -> str:
-    if isinstance(feed.company_id, int) and feed.company_id > 0:
-        return f"company:{feed.company_id}"
-    return f"feed:{feed.feed_id}"
-
-
-def _resolve_queue_batch_size() -> int:
-    raw_value = os.getenv("RSS_SCRAPE_QUEUE_BATCH_SIZE", str(DEFAULT_QUEUE_BATCH_SIZE))
-    try:
-        parsed = int(raw_value)
-    except (TypeError, ValueError):
-        return DEFAULT_QUEUE_BATCH_SIZE
-    if parsed <= 0:
-        return DEFAULT_QUEUE_BATCH_SIZE
-    return parsed
+    return RssScrapeJobQueuedRead(
+        job_id=job_id,
+        job_kind=("rss_scrape_ingest" if ingest else "rss_scrape_check"),
+        status=status,
+        tasks_total=tasks_total,
+        feeds_total=len(feeds),
+    )

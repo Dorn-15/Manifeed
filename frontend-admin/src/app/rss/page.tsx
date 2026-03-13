@@ -18,7 +18,7 @@ import {
   updateRssCompanyEnabled,
   updateRssFeedEnabled,
 } from "@/services/api/rss.service";
-import type { RssCompany, RssFeed, RssFeedCheckRead, RssSyncRead } from "@/types/rss";
+import type { RssCompany, RssFeed, RssScrapeJobQueuedRead, RssSyncRead } from "@/types/rss";
 
 import styles from "./page.module.css";
 
@@ -67,21 +67,30 @@ function sortFeeds(feeds: RssFeed[], sortMode: SortMode): RssFeed[] {
 }
 
 function formatSyncSummary(syncResult: RssSyncRead): string {
-  return `action=${syncResult.repository_action}`;
-}
+  const parts = [
+    `action=${syncResult.repository_action}`,
+    `mode=${syncResult.mode}`,
+    `files=${syncResult.files_processed}`,
+    `companies_removed=${syncResult.companies_removed}`,
+    `feeds_removed=${syncResult.feeds_removed}`,
+  ];
 
-function formatCheckSummary(checkResult: RssFeedCheckRead): string {
-  const summary = [`invalid=${checkResult.length}`];
-
-  if (checkResult.length === 0) {
-    return summary.join(" | ");
+  if (syncResult.current_revision) {
+    parts.push(`revision=${syncResult.current_revision.slice(0, 8)}`);
   }
 
-  const errorPreview = checkResult
-    .slice(0, 3)
-    .map((result) => `#${result.feed_id}: ${result.error}`)
-    .join(" ; ");
-  return `${summary.join(" | ")} | ${errorPreview}`;
+  return parts.join(" | ");
+}
+
+function formatCheckSummary(checkResult: RssScrapeJobQueuedRead): string {
+  return [
+    `job=${checkResult.job_id.slice(0, 8)}`,
+    `kind=${checkResult.job_kind}`,
+    `status=${checkResult.status}`,
+    `tasks=${checkResult.tasks_total}`,
+    `feeds=${checkResult.feeds_total}`,
+    "mode=check+ingest",
+  ].join(" | ");
 }
 
 export default function AdminRssPage() {
@@ -182,7 +191,7 @@ export default function AdminRssPage() {
       showPopInfo(
         "Last check result",
         formatCheckSummary(payload),
-        payload.length > 0 ? "alert" : "info",
+        "info",
       );
       await loadFeeds();
     } catch (error) {

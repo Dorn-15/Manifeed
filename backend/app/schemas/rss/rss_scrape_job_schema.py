@@ -1,18 +1,10 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Literal
 
 from pydantic import BaseModel, Field
 
-RssScrapeJobStatus = Literal[
-    "queued",
-    "processing",
-    "completed",
-    "completed_with_errors",
-    "failed",
-]
-RssScrapeResultStatus = Literal["success", "not_modified", "error", "pending"]
+from app.schemas.enums import RssScrapeItemStatus, WorkerJobKind, WorkerJobStatus
 
 
 class RssScrapeFeedPayloadSchema(BaseModel):
@@ -36,7 +28,10 @@ class RssScrapeJobRequestSchema(BaseModel):
 
 class RssScrapeJobQueuedRead(BaseModel):
     job_id: str
-    status: RssScrapeJobStatus
+    job_kind: WorkerJobKind
+    status: WorkerJobStatus
+    tasks_total: int = Field(ge=0, default=0)
+    feeds_total: int = Field(ge=0, default=0)
 
 
 class RssScrapeJobStatusRead(BaseModel):
@@ -44,7 +39,9 @@ class RssScrapeJobStatusRead(BaseModel):
     ingest: bool
     requested_by: str
     requested_at: datetime
-    status: RssScrapeJobStatus
+    status: WorkerJobStatus
+    tasks_total: int = Field(ge=0, default=0)
+    tasks_processed: int = Field(ge=0, default=0)
     feeds_total: int = Field(ge=0)
     feeds_processed: int = Field(ge=0)
     feeds_success: int = Field(ge=0)
@@ -55,7 +52,7 @@ class RssScrapeJobStatusRead(BaseModel):
 class RssScrapeJobFeedRead(BaseModel):
     feed_id: int
     feed_url: str
-    status: RssScrapeResultStatus = "pending"
+    status: RssScrapeItemStatus = RssScrapeItemStatus.PENDING
     error_message: str | None = None
     fetchprotection: int | None = Field(default=None, ge=0, le=2)
     new_etag: str | None = None

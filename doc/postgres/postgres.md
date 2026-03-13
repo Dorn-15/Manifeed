@@ -6,9 +6,11 @@ Primary PostgreSQL database for Manifeed.
 
 It stores:
 - RSS catalog entities (companies, feeds, tags)
-- Scraping runtime state (`feeds_scraping`)
-- Source content (`rss_sources`, `rss_source_feeds`)
-- Async scrape job tracking (`rss_scrape_jobs`, `rss_scrape_job_feeds`, `rss_scrape_job_results`)
+- Feed runtime state (`rss_feed_runtime`)
+- Source identity/content/link tables (`rss_sources`, `rss_source_contents`, `rss_source_feeds`)
+- Worker orchestration tables (`worker_jobs`, `worker_instances`, `rss_scrape_*`, `source_embedding_*`)
+- Embedding model and vector tables (`embedding_models`, `rss_source_embeddings`)
+- Embedding projection tables for the admin visualizer
 
 ## Image and Container
 
@@ -40,12 +42,12 @@ Current compose exposes PostgreSQL to host:
 
 ## Migrations
 
-Alembic migrations are managed from `db-manager/alembic`.
+Alembic migrations are managed from `backend/alembic`.
 
 Common commands:
 - `make db-migrate`
 - `make db-reset`
-- `docker compose run --rm --no-deps db_manager alembic upgrade head`
+- `docker compose run --rm --no-deps backend python -c "from app.services.migration_service import run_db_migrations; run_db_migrations()"`
 
 ## Useful Commands
 

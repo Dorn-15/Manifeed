@@ -79,11 +79,11 @@ def sync_rss_feeds(
 
 
 @rss_router.post("/feeds/check", response_model=RssScrapeJobQueuedRead)
-async def check_rss_feed_urls(
+def check_rss_feed_urls(
     feed_ids: list[int] | None = Query(default=None),
     db: Session = Depends(get_db_session),
 ) -> RssScrapeJobQueuedRead:
-    return await enqueue_rss_feed_check_job(db, feed_ids=feed_ids)
+    return enqueue_rss_feed_check_job(db, feed_ids=feed_ids)
 
 
 @rss_router.get("/img/{icon_url:path}")

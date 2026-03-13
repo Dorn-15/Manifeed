@@ -1,7 +1,9 @@
-from sqlalchemy import select
+from collections.abc import Sequence
+
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
-from app.models.rss import RssCompany
+from app.models.rss import RssCompany, RssFeed
 from app.utils import normalize_country, normalize_host
 
 
@@ -15,6 +17,39 @@ def get_company_by_name(db: Session, company_name: str) -> RssCompany | None:
     return db.execute(
         select(RssCompany).where(RssCompany.name == company_name)
     ).scalar_one_or_none()
+
+
+def list_rss_company_ids_with_feeds(db: Session) -> list[int]:
+    return list(
+        db.execute(
+            select(RssCompany.id)
+            .join(RssFeed, RssFeed.company_id == RssCompany.id)
+            .distinct()
+            .order_by(RssCompany.id.asc())
+        ).scalars().all()
+    )
+
+
+def delete_rss_companies_without_feeds(
+    db: Session,
+    company_ids: Sequence[int] | None = None,
+) -> int:
+    orphan_company_ids_query = (
+        select(RssCompany.id)
+        .outerjoin(RssFeed, RssFeed.company_id == RssCompany.id)
+        .where(RssFeed.id.is_(None))
+    )
+    if company_ids:
+        orphan_company_ids_query = orphan_company_ids_query.where(
+            RssCompany.id.in_(sorted(set(company_ids)))
+        )
+
+    orphan_company_ids = list(db.execute(orphan_company_ids_query).scalars().all())
+    if not orphan_company_ids:
+        return 0
+
+    db.execute(delete(RssCompany).where(RssCompany.id.in_(orphan_company_ids)))
+    return len(orphan_company_ids)
 
 
 def get_or_create_company(

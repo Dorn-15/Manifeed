@@ -17,6 +17,7 @@ import {
 } from "@/components";
 import { listRssFeeds } from "@/services/api/rss.service";
 import {
+  enqueueRssSourceEmbeddings,
   getRssSourceById,
   ingestRssSources,
   listRssSources,
@@ -24,6 +25,7 @@ import {
 import type { RssFeed } from "@/types/rss";
 import type {
   RssSourceDetail,
+  RssSourceEmbeddingEnqueueRead,
   RssSourceIngestRead,
   RssSourcePageRead,
 } from "@/types/sources";
@@ -73,6 +75,10 @@ function formatIngestSummary(result: RssSourceIngestRead): string {
   return `${summary} | ${preview}`;
 }
 
+function formatEmbeddingEnqueueSummary(result: RssSourceEmbeddingEnqueueRead): string {
+  return `queued=${result.queued_sources}`;
+}
+
 function getFeedLabel(feed: RssFeed): string {
   const companyName = feed.company?.name ?? "Unknown company";
   const section = feed.section ? ` / ${feed.section}` : "";
@@ -96,6 +102,7 @@ export default function AdminSourcesPage() {
   const [sourcesError, setSourcesError] = useState<string | null>(null);
   const [filtersError, setFiltersError] = useState<string | null>(null);
   const [ingestingSources, setIngestingSources] = useState<boolean>(false);
+  const [embeddingSources, setEmbeddingSources] = useState<boolean>(false);
   const [selectedFeedId, setSelectedFeedId] = useState<number | null>(null);
   const [selectedCompanyId, setSelectedCompanyId] = useState<number | null>(null);
   const [popInfo, setPopInfo] = useState<PopInfoState | null>(null);
@@ -262,6 +269,23 @@ export default function AdminSourcesPage() {
       setIngestingSources(false);
     }
   }, [loadSources, showPopInfo]);
+
+  const handleEmbedSources = useCallback(async () => {
+    setEmbeddingSources(true);
+    try {
+      const payload = await enqueueRssSourceEmbeddings();
+      showPopInfo(
+        "Embedding queue result",
+        formatEmbeddingEnqueueSummary(payload),
+        "info",
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unexpected error during enqueue";
+      showPopInfo("Embedding queue error", message, "alert");
+    } finally {
+      setEmbeddingSources(false);
+    }
+  }, [showPopInfo]);
 
   const companyOptions = useMemo<CompanyOption[]>(() => {
     const byId = new Map<number, string>();
@@ -459,6 +483,9 @@ export default function AdminSourcesPage() {
         <div className={styles.actions}>
           <Button variant="primary" onClick={handleIngest} disabled={ingestingSources}>
             {ingestingSources ? "Ingesting..." : "Ingest sources"}
+          </Button>
+          <Button onClick={handleEmbedSources} disabled={embeddingSources}>
+            {embeddingSources ? "Queueing..." : "Embed sources"}
           </Button>
           <Button onClick={handleRefresh} disabled={loadingSources}>
             {loadingSources ? "Refreshing..." : "Refresh"}

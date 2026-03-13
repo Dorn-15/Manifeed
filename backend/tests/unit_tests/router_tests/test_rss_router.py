@@ -32,7 +32,11 @@ def test_read_rss_feeds_returns_service_payload(client, mock_db_session, monkeyp
         )
     ]
 
-    monkeypatch.setattr(rss_router_module, "get_rss_feeds_read", lambda db: expected)
+    def fake_get_rss_feeds_read(db):
+        assert db is mock_db_session
+        return expected
+
+    monkeypatch.setattr(rss_router_module, "get_rss_feeds_read", fake_get_rss_feeds_read)
 
     response = client.get("/rss/")
 
@@ -43,7 +47,7 @@ def test_read_rss_feeds_returns_service_payload(client, mock_db_session, monkeyp
 def test_sync_rss_route_passes_force_parameter(client, mock_db_session, monkeypatch) -> None:
     monkeypatch.setattr(rss_router_module, "job_lock", _no_op_job_lock)
 
-    def fake_sync_rss_catalog(db, force=False):
+    def fake_sync_rss_catalog(db, *, force=False):
         assert db is mock_db_session
         assert force is True
         return RssSyncRead(repository_action="up_to_date")
@@ -53,7 +57,15 @@ def test_sync_rss_route_passes_force_parameter(client, mock_db_session, monkeypa
     response = client.post("/rss/sync?force=true")
 
     assert response.status_code == 200
-    assert response.json() == {"repository_action": "up_to_date"}
+    assert response.json() == {
+        "repository_action": "up_to_date",
+        "mode": "noop",
+        "current_revision": None,
+        "applied_from_revision": None,
+        "files_processed": 0,
+        "companies_removed": 0,
+        "feeds_removed": 0,
+    }
 
 
 def test_patch_feed_enabled_route_delegates_to_service(client, mock_db_session, monkeypatch) -> None:
@@ -91,10 +103,16 @@ def test_patch_company_enabled_route_delegates_to_service(client, mock_db_sessio
 
 
 def test_check_rss_feeds_route_passes_feed_ids(client, mock_db_session, monkeypatch) -> None:
-    async def fake_enqueue_rss_feed_check_job(db, feed_ids):
+    def fake_enqueue_rss_feed_check_job(db, *, feed_ids):
         assert db is mock_db_session
         assert feed_ids == [7, 8]
-        return RssScrapeJobQueuedRead(job_id="job-123", status="queued")
+        return RssScrapeJobQueuedRead(
+            job_id="job-123",
+            job_kind="rss_scrape_check",
+            status="queued",
+            tasks_total=1,
+            feeds_total=2,
+        )
 
     monkeypatch.setattr(
         rss_router_module,
@@ -105,7 +123,13 @@ def test_check_rss_feeds_route_passes_feed_ids(client, mock_db_session, monkeypa
     response = client.post("/rss/feeds/check?feed_ids=7&feed_ids=8")
 
     assert response.status_code == 200
-    assert response.json() == {"job_id": "job-123", "status": "queued"}
+    assert response.json() == {
+        "job_id": "job-123",
+        "job_kind": "rss_scrape_check",
+        "status": "queued",
+        "tasks_total": 1,
+        "feeds_total": 2,
+    }
 
 
 def test_sync_rss_route_returns_409_when_job_is_running(client, monkeypatch) -> None:

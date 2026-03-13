@@ -1,16 +1,23 @@
+from datetime import date
 from fastapi import APIRouter, Depends, Path, Query
 from sqlalchemy.orm import Session
 
 from app.errors.rss import RssJobAlreadyRunningError
 from app.schemas.rss import RssScrapeJobQueuedRead
 from app.schemas.sources import (
+    RssSourceEmbeddingEnqueueRead,
+    RssSourceEmbeddingMapRead,
+    RssSourceEmbeddingNeighborhoodRead,
     RssSourceDetailRead,
     RssSourcePartitionMaintenanceRead,
     RssSourcePageRead,
 )
 from app.services.sources import (
+    enqueue_sources_without_embeddings,
     enqueue_sources_ingest_job,
     get_rss_source_by_id,
+    get_rss_source_embedding_map,
+    get_rss_source_embedding_neighbors,
     get_rss_sources,
     repartition_rss_source_partitions,
 )
@@ -63,6 +70,36 @@ def read_sources_by_company(
     )
 
 
+@sources_router.get("/visualizer", response_model=RssSourceEmbeddingMapRead)
+def read_source_embedding_visualizer(
+    date_from: date | None = Query(default=None),
+    date_to: date | None = Query(default=None),
+    db: Session = Depends(get_db_session),
+) -> RssSourceEmbeddingMapRead:
+    return get_rss_source_embedding_map(
+        db,
+        date_from=date_from,
+        date_to=date_to,
+    )
+
+
+@sources_router.get("/visualizer/{source_id}/neighbors", response_model=RssSourceEmbeddingNeighborhoodRead)
+def read_source_embedding_neighbors(
+    source_id: int = Path(ge=1),
+    neighbor_limit: int = Query(default=8, ge=1, le=24),
+    date_from: date | None = Query(default=None),
+    date_to: date | None = Query(default=None),
+    db: Session = Depends(get_db_session),
+) -> RssSourceEmbeddingNeighborhoodRead:
+    return get_rss_source_embedding_neighbors(
+        db,
+        source_id=source_id,
+        neighbor_limit=neighbor_limit,
+        date_from=date_from,
+        date_to=date_to,
+    )
+
+
 @sources_router.get("/{source_id}", response_model=RssSourceDetailRead)
 def read_source_by_id(
     source_id: int = Path(ge=1),
@@ -72,12 +109,22 @@ def read_source_by_id(
 
 
 @sources_router.post("/ingest", response_model=RssScrapeJobQueuedRead)
-async def ingest_sources(
+def ingest_sources(
     feed_ids: list[int] | None = Query(default=None, min_length=1),
     db: Session = Depends(get_db_session),
 ) -> RssScrapeJobQueuedRead:
-    return await enqueue_sources_ingest_job(db, feed_ids=feed_ids)
+    return enqueue_sources_ingest_job(db, feed_ids=feed_ids)
 
+
+@sources_router.post("/embeddings/enqueue", response_model=RssSourceEmbeddingEnqueueRead)
+def enqueue_non_embedded_sources(
+    reembed_model_mismatches: bool = Query(default=False),
+    db: Session = Depends(get_db_session),
+) -> RssSourceEmbeddingEnqueueRead:
+    return enqueue_sources_without_embeddings(
+        db,
+        reembed_model_mismatches=reembed_model_mismatches,
+    )
 
 @sources_router.post(
     "/partitions/repartition-default",

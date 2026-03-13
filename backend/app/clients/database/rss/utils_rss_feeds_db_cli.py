@@ -3,7 +3,7 @@ from collections.abc import Sequence
 from sqlalchemy import delete, select, update
 from sqlalchemy.orm import Session
 
-from app.models.rss import RssCompany, RssFeed, RssFeedScraping, RssTag
+from app.models.rss import RssCompany, RssFeed, RssFeedRuntime, RssTag
 from app.schemas.rss import RssFeedUpsertSchema
 
 
@@ -19,13 +19,17 @@ def upsert_feed(
         ).scalar_one_or_none()
 
     if existing_feed is None:
-        initial_fetchprotection = _normalize_fetchprotection(payload.fetchprotection)
         new_feed = RssFeed(
             url=payload.url,
             section=payload.section,
             enabled=payload.enabled,
             trust_score=payload.trust_score,
-            scraping=RssFeedScraping(fetchprotection=initial_fetchprotection),
+            fetchprotection_override=(
+                _normalize_fetchprotection(payload.fetchprotection)
+                if payload.fetchprotection is not None
+                else None
+            ),
+            runtime=RssFeedRuntime(),
             tags=list(tags),
         )
         db.add(new_feed)
@@ -35,12 +39,9 @@ def upsert_feed(
     existing_feed.section = payload.section
     existing_feed.enabled = payload.enabled
     existing_feed.trust_score = payload.trust_score
-    scraping = _get_or_create_feed_scraping(existing_feed)
     if payload.fetchprotection is not None:
-        scraping.fetchprotection = max(
-            _normalize_fetchprotection(scraping.fetchprotection),
-            _normalize_fetchprotection(payload.fetchprotection),
-        )
+        existing_feed.fetchprotection_override = _normalize_fetchprotection(payload.fetchprotection)
+    _get_or_create_feed_runtime(existing_feed)
     existing_feed.tags = list(tags)
     return existing_feed, False
 
@@ -105,11 +106,11 @@ def _normalize_fetchprotection(fetchprotection: int | None) -> int:
     return 1
 
 
-def _get_or_create_feed_scraping(feed: RssFeed) -> RssFeedScraping:
-    scraping = feed.scraping
-    if scraping is not None:
-        return scraping
+def _get_or_create_feed_runtime(feed: RssFeed) -> RssFeedRuntime:
+    runtime = feed.runtime
+    if runtime is not None:
+        return runtime
 
-    scraping = RssFeedScraping(fetchprotection=1)
-    feed.scraping = scraping
-    return scraping
+    runtime = RssFeedRuntime()
+    feed.runtime = runtime
+    return runtime

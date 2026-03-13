@@ -9,9 +9,16 @@ const NAV_ITEMS = [
   { href: "/", label: "Dashboard" },
   { href: "/rss", label: "RSS" },
   { href: "/sources", label: "Sources" },
+  { href: "/visualizer", label: "Visualizer" },
+  { href: "/workers", label: "Workers" },
+  { href: "/queues", label: "Queues" },
 ];
 
-function isActiveRoute(pathname: string, href: string): boolean {
+function isActiveRoute(pathname: string | null, href: string): boolean {
+  if (!pathname) {
+    return false;
+  }
+
   if (href === "/") {
     return pathname === "/";
   }

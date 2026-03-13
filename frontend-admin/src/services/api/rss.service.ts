@@ -2,8 +2,8 @@ import { apiRequest, getApiBaseUrl } from "@/services/api/client";
 import type {
   RssCompanyEnabledToggleRead,
   RssFeed,
-  RssFeedCheckRead,
   RssFeedEnabledToggleRead,
+  RssScrapeJobQueuedRead,
   RssSyncRead,
 } from "@/types/rss";
 
@@ -39,7 +39,7 @@ export async function syncRssFeeds(force = false): Promise<RssSyncRead> {
   });
 }
 
-export async function checkRssFeeds(feedIds?: number[]): Promise<RssFeedCheckRead> {
+export async function checkRssFeeds(feedIds?: number[]): Promise<RssScrapeJobQueuedRead> {
   const searchParams = new URLSearchParams();
   if (feedIds) {
     for (const feedId of feedIds) {
@@ -49,7 +49,7 @@ export async function checkRssFeeds(feedIds?: number[]): Promise<RssFeedCheckRea
 
   const queryString = searchParams.toString();
   const path = queryString ? `/rss/feeds/check?${queryString}` : "/rss/feeds/check";
-  return apiRequest<RssFeedCheckRead>(path, {
+  return apiRequest<RssScrapeJobQueuedRead>(path, {
     method: "POST",
   });
 }

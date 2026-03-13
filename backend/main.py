@@ -1,3 +1,5 @@
+import asyncio
+from contextlib import asynccontextmanager, suppress
 import os
 from logging.config import dictConfig
 from typing import List, Tuple
@@ -12,7 +14,7 @@ from app.errors.rss import (
     RssFeedToggleForbiddenError,
     RssIconNotFoundError,
     RssJobAlreadyRunningError,
-    RssJobQueuePublishError,
+    RssJobEnqueueError,
     RssRepositorySyncError,
     # Exception handlers
     rss_catalog_parse_error_handler,
@@ -21,7 +23,7 @@ from app.errors.rss import (
     rss_feed_toggle_forbidden_error_handler,
     rss_icon_not_found_error_handler,
     rss_job_already_running_error_handler,
-    rss_job_queue_publish_error_handler,
+    rss_job_enqueue_error_handler,
     rss_repository_sync_error_handler,
 )
 
@@ -32,6 +34,8 @@ from app.routers import (
     rss_router,
     sources_router,
 )
+from app.services.migration_service import run_db_migrations
+from app.services.source_embedding_projection_sync_service import run_source_embedding_projection_sync
 
 
 def _configure_app_logging() -> None:
@@ -75,9 +79,24 @@ def _parse_cors_origins() -> Tuple[List[str], bool]:
     return ["http://localhost:3000", "http://localhost:3001"], True
 
 
+@asynccontextmanager
+async def _app_lifespan(_: FastAPI):
+    if _startup_tasks_disabled():
+        yield
+        return
+    run_db_migrations()
+    projection_sync_task = asyncio.create_task(run_source_embedding_projection_sync())
+    try:
+        yield
+    finally:
+        projection_sync_task.cancel()
+        with suppress(asyncio.CancelledError):
+            await projection_sync_task
+
+
 def create_app() -> FastAPI:
     _configure_app_logging()
-    app = FastAPI(title="Manifeed API")
+    app = FastAPI(title="Manifeed API", lifespan=_app_lifespan)
 
     cors_origins, allow_credentials = _parse_cors_origins()
     app.add_middleware(
@@ -102,12 +121,17 @@ def create_app() -> FastAPI:
         (RssCompanyNotFoundError, rss_company_not_found_error_handler),
         (RssFeedToggleForbiddenError, rss_feed_toggle_forbidden_error_handler),
         (RssJobAlreadyRunningError, rss_job_already_running_error_handler),
-        (RssJobQueuePublishError, rss_job_queue_publish_error_handler),
+        (RssJobEnqueueError, rss_job_enqueue_error_handler),
     )
     for exc_cls, handler in exception_handlers:
         app.add_exception_handler(exc_cls, handler)
 
     return app
+
+
+def _startup_tasks_disabled() -> bool:
+    raw_value = os.getenv("MANIFEED_DISABLE_STARTUP_TASKS", "").strip().lower()
+    return raw_value in {"1", "true", "yes", "on"}
 
 
 app = create_app()

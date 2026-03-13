@@ -1,0 +1,156 @@
+.main {
+  --shell-gap: var(--space-3);
+}
+
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  align-items: center;
+}
+
+.meta p {
+  margin: 0;
+  color: var(--text-secondary-strong);
+}
+
+.meta strong {
+  color: var(--text-primary);
+}
+
+.workerGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  gap: var(--space-3);
+}
+
+.workerCard {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.workerHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.workerIdentity {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.workerIdentity h2 {
+  margin: 0;
+}
+
+.workerIdentity p {
+  margin: 0;
+  color: var(--text-secondary-strong);
+  word-break: break-all;
+}
+
+.badgeRow {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.kpiGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--space-2);
+}
+
+.kpiItem {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-panel-soft);
+}
+
+.kpiLabel {
+  margin: 0;
+  color: var(--text-secondary-strong);
+}
+
+.kpiValue {
+  margin: 0;
+  font-size: var(--subtitle-b-size);
+  font-weight: var(--subtitle-b-weight);
+  line-height: var(--subtitle-b-line-height);
+  color: var(--text-primary);
+}
+
+.sectionBlock {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.sectionBlock h3 {
+  margin: 0;
+}
+
+.tableWrap {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 840px;
+}
+
+.table th,
+.table td {
+  text-align: left;
+  padding: var(--space-2);
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-secondary-strong);
+  font-size: var(--text-r-size);
+}
+
+.table th {
+  color: var(--text-primary);
+  font-weight: var(--text-b-weight);
+}
+
+.table td:first-child {
+  color: var(--text-primary);
+}
+
+.stateCell {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.detailCell {
+  max-width: 280px;
+  word-break: break-word;
+}
+
+.placeholder {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+@media (max-width: 768px) {
+  .workerGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .table {
+    min-width: 480px;
+  }
+}

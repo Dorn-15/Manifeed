@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 
-from app.clients.database.rss import list_rss_feeds_read
+from app.clients.database import list_rss_feeds_read
 from app.schemas.rss import RssFeedRead
 
 

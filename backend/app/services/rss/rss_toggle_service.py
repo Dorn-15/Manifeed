@@ -1,10 +1,10 @@
 from sqlalchemy.orm import Session
 
-from app.clients.database.rss import (
+from app.clients.database import (
     get_company_by_id,
     get_rss_feed_by_id,
-    set_rss_feed_enabled,
     set_rss_company_enabled,
+    set_rss_feed_enabled,
 )
 from app.errors.rss import (
     RssCompanyNotFoundError,
@@ -26,14 +26,16 @@ def toggle_rss_feed_enabled(
     if feed is None:
         raise RssFeedNotFoundError(f"RSS feed {feed_id} not found")
     if feed.enabled == enabled:
-        return RssFeedEnabledToggleRead(feed_id=feed.id, enabled=feed.enabled)
-    if feed.company is not None and feed.company.enabled is False:
+        return RssFeedEnabledToggleRead(feed_id=feed_id, enabled=enabled)
+
+    company = feed.company
+    if company is not None and not company.enabled:
         raise RssFeedToggleForbiddenError(
-            f"Cannot toggle feed {feed_id}: company '{feed.company.name}' is disabled"
+            f"Cannot toggle feed {feed_id}: company '{company.name}' is disabled"
         )
 
     try:
-        updated = set_rss_feed_enabled(db, feed_id=feed_id, enabled=enabled)
+        updated = set_rss_feed_enabled(db, feed_id, enabled)
         if not updated:
             raise RssFeedNotFoundError(f"RSS feed {feed_id} not found")
         db.commit()
@@ -41,7 +43,7 @@ def toggle_rss_feed_enabled(
         db.rollback()
         raise
 
-    return RssFeedEnabledToggleRead(feed_id=feed.id, enabled=enabled)
+    return RssFeedEnabledToggleRead(feed_id=feed_id, enabled=enabled)
 
 
 def toggle_rss_company_enabled(
@@ -53,10 +55,10 @@ def toggle_rss_company_enabled(
     if company is None:
         raise RssCompanyNotFoundError(f"RSS company {company_id} not found")
     if company.enabled == enabled:
-        return RssCompanyEnabledToggleRead(company_id=company.id, enabled=company.enabled)
+        return RssCompanyEnabledToggleRead(company_id=company_id, enabled=enabled)
 
     try:
-        updated = set_rss_company_enabled(db, company_id=company_id, enabled=enabled)
+        updated = set_rss_company_enabled(db, company_id, enabled)
         if not updated:
             raise RssCompanyNotFoundError(f"RSS company {company_id} not found")
         db.commit()
@@ -64,4 +66,4 @@ def toggle_rss_company_enabled(
         db.rollback()
         raise
 
-    return RssCompanyEnabledToggleRead(company_id=company.id, enabled=enabled)
+    return RssCompanyEnabledToggleRead(company_id=company_id, enabled=enabled)
